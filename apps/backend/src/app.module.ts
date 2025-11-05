@@ -4,6 +4,10 @@ import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { ConfigModule } from '@nestjs/config';
 import { EnvSchema } from '#config/env.js';
 
+import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { MikroORM } from '@mikro-orm/postgresql';
+import dbConfig from './mikro-orm.config.js';
+
 @Module({
 	imports: [
 		ConfigModule.forRoot({
@@ -18,6 +22,7 @@ import { EnvSchema } from '#config/env.js';
 				return res.data;
 			},
 		}),
+		MikroOrmModule.forRoot(dbConfig),
 	],
 	controllers: [],
 	providers: [
@@ -32,6 +37,8 @@ import { EnvSchema } from '#config/env.js';
 	],
 })
 export class AppModule implements OnModuleInit {
-	constructor() {}
-	onModuleInit() {}
+	constructor(private readonly orm: MikroORM) {}
+	async onModuleInit() {
+		await this.orm.getMigrator().up();
+	}
 }
