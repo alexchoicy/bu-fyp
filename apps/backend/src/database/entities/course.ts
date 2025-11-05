@@ -8,7 +8,7 @@ import {
 	ManyToOne,
 	ManyToMany,
 } from '@mikro-orm/core';
-import { GroupEntity } from './group.js';
+import { GroupCourse } from './group.js';
 
 @Entity()
 export class Code {
@@ -42,10 +42,8 @@ export class Course {
 	@ManyToOne(() => Code, { fieldName: 'Code', nullable: true })
 	code?: Code;
 
-	@ManyToMany(() => GroupEntity, (g) => g.courses, {
-		mappedBy: 'group',
-	})
-	groups = new Collection<GroupEntity>(this);
+	@OneToMany(() => GroupCourse, (gc) => gc.course)
+	groupLinks = new Collection<GroupCourse>(this);
 
 	@ManyToMany(() => Course, 'isPrerequisiteFor', {
 		pivotTable: 'Course_pre_req',

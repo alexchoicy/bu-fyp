@@ -5,6 +5,8 @@ import {
 	Property,
 	ManyToMany,
 	Collection,
+	ManyToOne,
+	OneToMany,
 } from '@mikro-orm/core';
 import { Category } from './category.js';
 import { Course } from './course.js';
@@ -28,11 +30,19 @@ export class GroupEntity {
 	})
 	categories = new Collection<Category>(this);
 
-	@ManyToMany(() => Course, (c) => c.groups, {
-		pivotTable: 'Group_course',
-		joinColumn: 'group',
-		inverseJoinColumn: 'Course',
-		owner: true,
-	})
-	courses = new Collection<Course>(this);
+	@OneToMany(() => GroupCourse, (gc) => gc.group)
+	groupCourses = new Collection<GroupCourse>(this);
+}
+
+@Entity()
+export class GroupCourse {
+	// Use a composite PK of (group, Course), or add a surrogate id if preferred.
+	@ManyToOne(() => GroupEntity, { fieldName: 'group', primary: true })
+	group!: GroupEntity;
+
+	@ManyToOne(() => Course, { fieldName: 'Course', primary: true })
+	course!: Course;
+
+	@Property({ type: 'boolean' })
+	required!: boolean;
 }
