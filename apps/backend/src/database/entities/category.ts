@@ -27,6 +27,9 @@ export class Category {
 	@Property({ type: 'int' })
 	min_credit!: number;
 
+	@Property({ type: 'int' })
+	priority!: number;
+
 	@ManyToMany(() => Programme, (p) => p.categories, {
 		mappedBy: 'categories',
 	})

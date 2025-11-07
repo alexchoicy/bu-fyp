@@ -19,9 +19,6 @@ export class GroupEntity {
 	@Property({ type: 'text' })
 	name!: string;
 
-	@Property({ type: 'int' })
-	min_credit!: number;
-
 	@ManyToMany(() => Category, (c) => c.groups, {
 		pivotTable: 'Category_group',
 		joinColumn: 'Group',

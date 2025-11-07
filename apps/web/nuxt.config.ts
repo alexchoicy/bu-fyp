@@ -5,7 +5,6 @@ export default defineNuxtConfig({
   telemetry: true,
 
   runtimeConfig: {
-    JWKS_URL: process.env.NUXT_JWKS_URL,
     public: {
       WS_URL: "",
       apiBase: "",
