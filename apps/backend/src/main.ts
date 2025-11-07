@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
 // BigInt JSON serialization
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 (BigInt.prototype as any).toJSON = function () {
@@ -19,6 +20,12 @@ async function bootstrap() {
 	app.use(cookieParser());
 
 	app.useBodyParser('json', { limit: '1gb' });
+
+	const corsOptions: CorsOptions = {
+		origin: '*',
+	};
+
+	app.enableCors(corsOptions);
 
 	const openApiDoc = SwaggerModule.createDocument(
 		app,

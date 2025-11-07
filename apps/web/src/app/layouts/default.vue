@@ -12,7 +12,9 @@
             <LayoutsNavbar />
             <Separator />
           </div>
-          <slot />
+          <div class="p-2">
+            <slot />
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

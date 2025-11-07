@@ -7,6 +7,9 @@ import { EnvSchema } from '#config/env.js';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MikroORM } from '@mikro-orm/postgresql';
 import dbConfig from './mikro-orm.config.js';
+import { ProgramModule } from '#modules/program/program.module.js';
+import { BaseController } from '#modules/base.controller.js';
+import { GroupModule } from '#modules/groups/groups.module.js';
 
 @Module({
 	imports: [
@@ -23,8 +26,10 @@ import dbConfig from './mikro-orm.config.js';
 			},
 		}),
 		MikroOrmModule.forRoot(dbConfig),
+		ProgramModule,
+		GroupModule,
 	],
-	controllers: [],
+	controllers: [BaseController],
 	providers: [
 		{
 			provide: APP_PIPE,
