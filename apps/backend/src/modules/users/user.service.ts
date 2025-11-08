@@ -1,8 +1,81 @@
+import { Course } from '#database/entities/course.js';
 import { User } from '#database/entities/user.js';
+import { CourseCode } from '@fyp/api/course/types';
+import { Category as CategoryType, RuleNode } from '@fyp/api/program/types';
+import { checkCategoryCompletion } from '@fyp/api/program/utils';
 import { EntityManager } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
 	constructor(private readonly em: EntityManager) {}
+
+	async checkGraduationRequirements(userId: string) {
+		const user = await this.em.findOne(
+			User,
+			{ id: userId },
+			{
+				populate: [
+					'studiedCourses',
+					'programmes',
+					'programmes.categories',
+					'programmes.categories.groups',
+					'programmes.categories.groups.groupCourses',
+				],
+			},
+		);
+
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+		const studiedCourses = new Map<string, Course>();
+		for (const sc of user.studiedCourses) {
+			studiedCourses.set(sc.course.id, sc.course);
+		}
+
+		console.log(studiedCourses);
+
+		for (const programme of user.programmes) {
+			console.log(`Checking programme: ${programme.name}`);
+			for (const category of programme.categories) {
+				const groupMap = new Map<
+					string,
+					{ course: Course[]; tag: CourseCode[] }
+				>();
+				for (const group of category.groups) {
+					for (const gc of group.groupCourses) {
+						//whatever zzz
+						if (!groupMap.has(group.id)) {
+							groupMap.set(group.id, { course: [], tag: [] });
+						}
+						const groupData = groupMap.get(group.id)!;
+						if (gc.course) {
+							groupData.course.push(gc.course);
+						} else if (gc.code) {
+							groupData.tag.push(gc.code);
+						}
+					}
+				}
+
+				const parseToCategory: CategoryType = {
+					id: category.id,
+					name: category.name,
+					ruleTree: category.rules as RuleNode,
+					notes: category.notes || undefined,
+					min_credit: category.min_credit,
+					priority: category.priority,
+				};
+
+				console.log(
+					'Checked',
+					checkCategoryCompletion(
+						parseToCategory,
+						studiedCourses,
+						groupMap,
+					),
+				);
+			}
+		}
+		console.log('Done checking all programmes', studiedCourses);
+	}
 }

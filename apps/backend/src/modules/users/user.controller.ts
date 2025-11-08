@@ -6,5 +6,7 @@ export class UserController {
 	constructor(private readonly userService: UserService) {}
 
 	@Get(':id/check')
-	async checkUser(@Param('id') id: string) {}
+	async checkUser(@Param('id') id: string) {
+		return this.userService.checkGraduationRequirements(id);
+	}
 }

@@ -50,6 +50,7 @@ export function checkGroupCompletion(
       }
       checkArray.push(hasCourse);
     }
+
     return checkArray.every((check) => check === true);
   } else if (selectionMode === "one-of") {
     for (const course of completedCourses.values()) {

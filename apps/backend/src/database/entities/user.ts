@@ -42,7 +42,7 @@ export class User {
 	programmes = new Collection<Programme>(this);
 
 	@OneToMany(() => StudentCourse, (sc) => sc.student)
-	courses = new Collection<StudentCourse>(this);
+	studiedCourses = new Collection<StudentCourse>(this);
 
 	@BeforeUpdate()
 	@BeforeCreate()
