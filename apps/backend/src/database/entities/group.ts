@@ -7,9 +7,10 @@ import {
 	Collection,
 	ManyToOne,
 	OneToMany,
+	type Rel,
 } from '@mikro-orm/core';
 import { Category } from './category.js';
-import { Course } from './course.js';
+import { Code, Course } from './course.js';
 
 @Entity()
 export class GroupEntity {
@@ -33,13 +34,15 @@ export class GroupEntity {
 
 @Entity()
 export class GroupCourse {
-	// Use a composite PK of (group, Course), or add a surrogate id if preferred.
-	@ManyToOne(() => GroupEntity, { fieldName: 'group', primary: true })
-	group!: GroupEntity;
+	@PrimaryKey({ type: BigIntType, autoincrement: true })
+	id!: string;
 
-	@ManyToOne(() => Course, { fieldName: 'Course', primary: true })
-	course!: Course;
+	@ManyToOne(() => GroupEntity, { fieldName: 'group' })
+	group!: Rel<GroupEntity>;
 
-	@Property({ type: 'boolean' })
-	required!: boolean;
+	@ManyToOne(() => Course, { fieldName: 'Course', nullable: true })
+	course?: Rel<Course>;
+	// I DUNNO
+	@ManyToOne(() => Code, { fieldName: 'Code', nullable: true })
+	code?: Rel<Code>;
 }

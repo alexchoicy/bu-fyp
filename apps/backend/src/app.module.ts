@@ -10,6 +10,10 @@ import dbConfig from './mikro-orm.config.js';
 import { ProgramModule } from '#modules/program/program.module.js';
 import { BaseController } from '#modules/base.controller.js';
 import { GroupModule } from '#modules/groups/groups.module.js';
+import { TagModule } from '#modules/tags/tag.module.js';
+import { CourseModule } from '#modules/courses/course.module.js';
+import { UserModule } from '#modules/users/user.module.js';
+import { AccountSeeder } from '#database/seeder/accountSeeder.js';
 
 @Module({
 	imports: [
@@ -28,6 +32,9 @@ import { GroupModule } from '#modules/groups/groups.module.js';
 		MikroOrmModule.forRoot(dbConfig),
 		ProgramModule,
 		GroupModule,
+		TagModule,
+		CourseModule,
+		UserModule,
 	],
 	controllers: [BaseController],
 	providers: [
@@ -45,5 +52,6 @@ export class AppModule implements OnModuleInit {
 	constructor(private readonly orm: MikroORM) {}
 	async onModuleInit() {
 		await this.orm.getMigrator().up();
+		await this.orm.seeder.seed(AccountSeeder);
 	}
 }

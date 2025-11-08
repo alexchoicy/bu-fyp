@@ -7,6 +7,7 @@ import {
 	Collection,
 } from '@mikro-orm/core';
 import { Category } from './category.js';
+import { User } from './user.js';
 
 @Entity()
 export class Programme {
@@ -26,4 +27,9 @@ export class Programme {
 		owner: true,
 	})
 	categories = new Collection<Category>(this);
+
+	@ManyToMany(() => User, (u: User) => u.programmes, {
+		mappedBy: 'programmes',
+	})
+	students = new Collection<User>(this);
 }

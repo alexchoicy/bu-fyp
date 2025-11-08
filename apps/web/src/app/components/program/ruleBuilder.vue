@@ -88,6 +88,7 @@
           <SelectContent>
             <SelectItem value="all-of">ALL OF</SelectItem>
             <SelectItem value="one-of">ONE OF</SelectItem>
+            <SelectItem value="min-credit">MIN CREDIT</SelectItem>
           </SelectContent>
         </Select>
 

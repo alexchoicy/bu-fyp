@@ -10,6 +10,8 @@
   function createCategory() {
     data.value.categories.push({
       name: "New Category",
+      min_credit: 0,
+      priority: 0,
       ruleTree: {
         type: "rule",
         operator: "and",
@@ -19,9 +21,14 @@
   }
 
   async function createProgram() {
+    const sendSort = data.value.categories.sort((a, b) => a.priority - b.priority);
+
     await useNuxtApp().$backend("program", {
       method: "POST",
-      body: data.value,
+      body: {
+        ...data.value,
+        categories: sendSort,
+      },
     });
   }
 </script>

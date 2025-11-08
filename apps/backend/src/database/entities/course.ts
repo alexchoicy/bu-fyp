@@ -9,13 +9,14 @@ import {
 	ManyToMany,
 } from '@mikro-orm/core';
 import { GroupCourse } from './group.js';
+import { StudentCourse } from './user.js';
 
 @Entity()
 export class Code {
 	@PrimaryKey({ type: BigIntType, autoincrement: true })
 	id!: string;
 
-	@Property({ type: 'text' })
+	@Property({ type: 'text', unique: true })
 	tag!: string;
 
 	@Property({ type: 'text' })
@@ -23,6 +24,9 @@ export class Code {
 
 	@OneToMany(() => Course, (c) => c.code)
 	courses = new Collection<Course>(this);
+
+	@OneToMany(() => GroupCourse, (gc) => gc.code)
+	groupLinks = new Collection<GroupCourse>(this);
 }
 
 @Entity()
@@ -42,8 +46,17 @@ export class Course {
 	@ManyToOne(() => Code, { fieldName: 'Code', nullable: true })
 	code?: Code;
 
+	@Property({ type: 'int' })
+	courseNumber!: number;
+
+	@Property({ type: 'text', nullable: true })
+	description?: string;
+
 	@OneToMany(() => GroupCourse, (gc) => gc.course)
 	groupLinks = new Collection<GroupCourse>(this);
+
+	@OneToMany(() => StudentCourse, (sc: StudentCourse) => sc.course)
+	studentCourses = new Collection<StudentCourse>(this);
 
 	@ManyToMany(() => Course, 'isPrerequisiteFor', {
 		pivotTable: 'Course_pre_req',
