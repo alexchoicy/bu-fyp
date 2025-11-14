@@ -34,6 +34,13 @@ export class ProgramService {
 			});
 			program.categories.add(category);
 
+			if (categoryData.ruleTree.courseSelectionMode === 'min-credit') {
+				// For Free Electives, set priority to -1 to ensure they are processed last
+				category.priority = -1;
+				await this.em.persistAndFlush(category);
+				continue;
+			}
+
 			const groups = getAllGroupsFromCategory(categoryData.ruleTree);
 			for (const groupID of groups) {
 				const group = await this.em.findOneOrFail(GroupEntity, {

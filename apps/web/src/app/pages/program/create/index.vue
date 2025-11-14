@@ -32,6 +32,7 @@
       ruleTree: {
         type: "group",
         children: [],
+        groupID: "0",
         courseSelectionMode: "min-credit",
       },
     });
