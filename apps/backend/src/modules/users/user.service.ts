@@ -1,5 +1,5 @@
 import { Course } from '#database/entities/course.js';
-import { User } from '#database/entities/user.js';
+import { StudentCourse, User } from '#database/entities/user.js';
 import { CourseCode } from '@fyp/api/course/types';
 import {
 	Category as CategoryType,
@@ -8,6 +8,7 @@ import {
 	RuleNode,
 } from '@fyp/api/program/types';
 import { checkCategoryCompletion } from '@fyp/api/program/utils';
+import { StudentCourseRequest } from '@fyp/api/student/types';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
@@ -88,5 +89,55 @@ export class UserService {
 			});
 		}
 		return programmes;
+	}
+
+	async getCoursesTaken(userId: string): Promise<StudentCourse[]> {
+		const user = await this.em.find(
+			StudentCourse,
+			{
+				student: { id: userId },
+			},
+			{
+				populate: ['course', 'course.code'],
+			},
+		);
+
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		return user;
+	}
+
+	async setCoursesTaken(userId: string, data: StudentCourseRequest) {
+		const user = await this.em.findOne(User, { id: userId });
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		const course = await this.em.findOne(Course, { id: data.courseID });
+		if (!course) {
+			throw new NotFoundException('Course not found');
+		}
+
+		let studentCourse = await this.em.findOne(StudentCourse, {
+			student: { id: userId },
+			course: { id: data.courseID },
+		});
+
+		if (!studentCourse) {
+			studentCourse = new StudentCourse();
+			studentCourse.student = user;
+			studentCourse.course = course;
+		}
+
+		studentCourse.status = data.status;
+		studentCourse.grade = data.grade;
+		studentCourse.term = data.term;
+		studentCourse.year = data.year;
+
+		await this.em.persistAndFlush(studentCourse);
+
+		return studentCourse;
 	}
 }

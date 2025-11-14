@@ -13,7 +13,10 @@
       title: "Courses",
       icon: BookOpen,
       href: "/courses",
-      items: [{ title: "Course Catalog", href: "/courses" }],
+      items: [
+        { title: "Course Catalog", href: "/courses" },
+        { title: "My Courses", href: "/courses/personal" },
+      ],
     },
   ];
 

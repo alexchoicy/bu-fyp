@@ -13,8 +13,9 @@ import {
 	type EventArgs,
 } from '@mikro-orm/core';
 import { Programme } from './programme.js';
-import { Course } from './course.js';
+import { Course, CourseSection } from './course.js';
 import { hash, verify } from 'argon2';
+import type { StudentCourseStatus, TermCode } from '@fyp/api/static/types';
 
 @Entity({ tableName: 'User' })
 export class User {
@@ -98,11 +99,17 @@ export class StudentCourse {
 	course!: Course;
 
 	@Property({ type: 'text' })
+	status!: StudentCourseStatus;
+
+	@Property({ type: 'text' })
 	grade!: string;
 
 	@Property({ type: 'text' })
-	term!: string;
+	term!: TermCode;
 
 	@Property({ type: 'text' })
 	year!: string;
+
+	@ManyToOne(() => CourseSection)
+	courseSection!: CourseSection;
 }

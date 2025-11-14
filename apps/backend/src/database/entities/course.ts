@@ -10,6 +10,11 @@ import {
 } from '@mikro-orm/core';
 import { GroupCourse } from './group.js';
 import { StudentCourse } from './user.js';
+import type {
+	CourseSectionType,
+	CourseSectionWeekday,
+} from '@fyp/api/course/types';
+import type { TermCode } from '@fyp/api/static/types';
 
 @Entity()
 export class Code {
@@ -87,4 +92,52 @@ export class Course {
 		inverseJoinColumn: 'course',
 	})
 	isAntiRequisiteFor = new Collection<Course>(this);
+
+	@OneToMany(() => CourseSection, (cs) => cs.course)
+	sections = new Collection<CourseSection>(this);
+}
+
+@Entity()
+export class CourseSection {
+	@PrimaryKey({ type: BigIntType, autoincrement: true })
+	id!: string;
+
+	@ManyToOne(() => Course, { fieldName: 'courseID' })
+	course!: Course;
+
+	@OneToMany(() => CourseMeeting, (cm) => cm.courseSection)
+	meetings = new Collection<CourseMeeting>(this);
+
+	@Property({ type: 'text' })
+	term!: TermCode;
+
+	@Property({ type: 'text' })
+	year!: string;
+
+	@Property({ type: 'int' })
+	position!: number;
+}
+
+@Entity()
+export class CourseMeeting {
+	@PrimaryKey({ type: BigIntType, autoincrement: true })
+	id!: string;
+
+	@ManyToOne(() => CourseSection, { fieldName: 'courseSectionID' })
+	courseSection!: CourseSection;
+
+	@Property({ type: 'text' })
+	sectionType!: CourseSectionType;
+
+	@Property({ type: 'text' })
+	day!: CourseSectionWeekday;
+
+	@Property({ type: 'text' })
+	startTime!: string;
+
+	@Property({ type: 'text' })
+	endTime!: string;
+
+	@Property({ type: 'text' })
+	location!: string;
 }

@@ -1,4 +1,4 @@
-import { Code, Course } from '#database/entities/course.js';
+import { Code, Course, CourseSection } from '#database/entities/course.js';
 import { GroupCourse, GroupEntity } from '#database/entities/group.js';
 import { Course as CourseType } from '@fyp/api/course/types';
 import { EntityManager } from '@mikro-orm/postgresql';
@@ -116,5 +116,18 @@ export class CourseService {
 			});
 			await this.em.persistAndFlush(groupCourse);
 		}
+	}
+
+	async getCourseSections(courseId: string) {
+		const sections = await this.em.find(
+			CourseSection,
+			{
+				course: { id: courseId },
+			},
+			{
+				populate: ['meetings'],
+			},
+		);
+		return sections;
 	}
 }

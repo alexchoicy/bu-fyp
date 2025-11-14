@@ -20,4 +20,9 @@ export class CourseController {
 	async createCourse(@Body() courseData: CreateCourseDto) {
 		return this.courseService.createCourse(courseData);
 	}
+
+	@Get(':id/sections')
+	async getCourseSections(@Param('id') id: string) {
+		return this.courseService.getCourseSections(id);
+	}
 }
