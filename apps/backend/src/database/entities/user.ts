@@ -58,6 +58,34 @@ export class User {
 	}
 }
 
+@Entity()
+export class Admin {
+	@PrimaryKey({ type: BigIntType, autoincrement: true })
+	id!: string;
+
+	@Property({ type: 'text', unique: true })
+	username!: string;
+
+	@Property({ type: 'text' })
+	name!: string;
+
+	@Property({ hidden: true, lazy: true })
+	password: string;
+
+	@BeforeUpdate()
+	@BeforeCreate()
+	async hashPassword(args: EventArgs<Admin>) {
+		const password = args.changeSet?.payload.password;
+		if (password) {
+			this.password = await hash(password);
+		}
+	}
+
+	async verifyPassword(password: string) {
+		return await verify(this.password, password);
+	}
+}
+
 @Entity({ tableName: 'student_course' })
 export class StudentCourse {
 	@PrimaryKey({ type: BigIntType, autoincrement: true })

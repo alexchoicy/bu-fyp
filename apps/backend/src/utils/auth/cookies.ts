@@ -9,7 +9,7 @@ export function setAuthCookies(
 ) {
 	res.cookie(AUTH_COOKIE_NAME, token, {
 		httpOnly: true,
-		secure: true,
+		secure: process.env.NODE_ENV === 'production', // only secure in prod
 		sameSite: 'lax',
 		domain: cookieDomains,
 		path: '/',
@@ -25,7 +25,7 @@ export function getAuthTokenFromCookies(req: {
 export function clearAuthCookies(res: Response, cookieDomains: string) {
 	res.clearCookie(AUTH_COOKIE_NAME, {
 		httpOnly: true,
-		secure: true,
+		secure: process.env.NODE_ENV === 'production', // only secure in prod
 		sameSite: 'lax',
 		path: '/',
 		domain: cookieDomains,

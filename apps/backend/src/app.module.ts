@@ -14,6 +14,7 @@ import { TagModule } from '#modules/tags/tag.module.js';
 import { CourseModule } from '#modules/courses/course.module.js';
 import { UserModule } from '#modules/users/user.module.js';
 import { AccountSeeder } from '#database/seeder/accountSeeder.js';
+import { AuthModule } from '#modules/auth/auth.module.js';
 
 @Module({
 	imports: [
@@ -35,6 +36,7 @@ import { AccountSeeder } from '#database/seeder/accountSeeder.js';
 		TagModule,
 		CourseModule,
 		UserModule,
+		AuthModule,
 	],
 	controllers: [BaseController],
 	providers: [

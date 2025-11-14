@@ -3,7 +3,7 @@ export default defineNuxtPlugin(() => {
   const headers = useRequestHeaders(["cookie"]);
   const backend = $fetch.create({
     baseURL: config.public.apiBase,
-    // credentials: "include",
+    credentials: "include",
     headers,
 
     onResponseError({ response }) {

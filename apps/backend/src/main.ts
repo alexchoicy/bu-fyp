@@ -22,7 +22,8 @@ async function bootstrap() {
 	app.useBodyParser('json', { limit: '1gb' });
 
 	const corsOptions: CorsOptions = {
-		origin: '*',
+		origin: ['http://localhost:3000', 'http://localhost:3100'],
+		credentials: true,
 	};
 
 	app.enableCors(corsOptions);
