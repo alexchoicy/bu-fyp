@@ -1,5 +1,9 @@
 <script setup lang="ts">
   import type { Programme } from "@fyp/api/program/types";
+
+  definePageMeta({
+    allowedRoles: ["admin"],
+  });
   // I DUNNO WHAT I WAS DOING HERE BUT IT WORKS COOL
 
   const data: Ref<Programme> = ref({
@@ -16,6 +20,19 @@
         type: "rule",
         operator: "and",
         children: [],
+      },
+    });
+  }
+
+  function createFreeElectiveCategory() {
+    data.value.categories.push({
+      name: "Free Electives",
+      min_credit: 0,
+      priority: data.value.categories.length,
+      ruleTree: {
+        type: "group",
+        children: [],
+        courseSelectionMode: "min-credit",
       },
     });
   }
@@ -37,6 +54,7 @@
   <div>
     <Button @click="createProgram">Create</Button>
     <Button @click="createCategory">Add</Button>
+    <Button @click="createFreeElectiveCategory">Add Free elective Category</Button>
     <Input v-model="data.name" placeholder="Programme Name" />
     <div v-for="(category, index) in data.categories" :key="index">
       <Card>
@@ -45,7 +63,7 @@
         </CardHeader>
         <CardContent>
           <div>Rule Builder for {{ category.name }}</div>
-          <ProgramRuleBuilder :node="category.ruleTree" :depth="0" />
+          <ProgramRuleBuilder :category="category" :node="category.ruleTree" :depth="0" />
         </CardContent>
       </Card>
     </div>

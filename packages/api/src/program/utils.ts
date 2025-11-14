@@ -148,6 +148,22 @@ export function checkCategoryCompletion(
 
   return {
     ...category,
-    completed,
+    isCompleted: completed,
+    groupDetails: Array.from(groupMap.entries()).flatMap(([id, data]) => {
+      const details: Array<{
+        id: string;
+        type: "course" | "tag";
+        name: string;
+      }> = [];
+      for (const course of data.course) {
+        console.log(course);
+        details.push({ id: course.id!, type: "course", name: course.name });
+      }
+      for (const tag of data.tag) {
+        details.push({ id: tag.id, type: "tag", name: tag.name });
+      }
+
+      return details;
+    }),
   };
 }

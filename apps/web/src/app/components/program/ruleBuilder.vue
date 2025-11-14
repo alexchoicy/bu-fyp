@@ -1,7 +1,11 @@
 <script setup lang="ts">
-  import type { Group, RuleNode } from "@fyp/api/program/types";
+  import type { Category, Group, RuleNode } from "@fyp/api/program/types";
 
   const props = defineProps({
+    category: {
+      type: Object as () => Category,
+      required: true,
+    },
     node: {
       type: Object as () => RuleNode,
       required: true,
@@ -51,7 +55,7 @@
       </CardHeader>
       <CardContent>
         <div v-for="(child, index) in node.children" :key="index" :style="{ marginLeft: `${depth * 20}px` }">
-          <ProgramRuleBuilder :node="child" :depth="depth + 1" />
+          <ProgramRuleBuilder :category="category" :node="child" :depth="depth + 1" />
         </div>
       </CardContent>
       <CardFooter>
@@ -78,7 +82,7 @@
       </CardFooter>
     </Card>
   </div>
-  <div v-else-if="node.type === 'group'">
+  <div v-else-if="node.type === 'group' && node.courseSelectionMode != 'min-credit'">
     <Card>
       <CardContent>
         <Select v-model="node.courseSelectionMode">
@@ -103,6 +107,25 @@
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+  <div v-else-if="node.type === 'group' && node.courseSelectionMode === 'min-credit'">
+    <Card>
+      <CardContent>
+        <Select v-model="node.courseSelectionMode">
+          <SelectTrigger>
+            <SelectValue placeholder="Select course selection mode" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="min-credit">MIN CREDIT</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div class="mt-4">
+          <Label>Minimum Credits</Label>
+          <Input v-model.number="category.min_credit" type="number" min="0" />
         </div>
       </CardContent>
     </Card>

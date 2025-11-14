@@ -1,7 +1,12 @@
 import { Course } from '#database/entities/course.js';
 import { User } from '#database/entities/user.js';
 import { CourseCode } from '@fyp/api/course/types';
-import { Category as CategoryType, RuleNode } from '@fyp/api/program/types';
+import {
+	Category as CategoryType,
+	ProgrammeCheck,
+	ProgrammeCheckCategory,
+	RuleNode,
+} from '@fyp/api/program/types';
 import { checkCategoryCompletion } from '@fyp/api/program/utils';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -33,10 +38,12 @@ export class UserService {
 			studiedCourses.set(sc.course.id, sc.course);
 		}
 
-		console.log(studiedCourses);
+		const checkedCourses = new Map(studiedCourses);
+
+		const programmes: Array<ProgrammeCheck> = [];
 
 		for (const programme of user.programmes) {
-			console.log(`Checking programme: ${programme.name}`);
+			const categoryResults: Array<ProgrammeCheckCategory> = [];
 			for (const category of programme.categories) {
 				const groupMap = new Map<
 					string,
@@ -66,16 +73,20 @@ export class UserService {
 					priority: category.priority,
 				};
 
-				console.log(
-					'Checked',
-					checkCategoryCompletion(
-						parseToCategory,
-						studiedCourses,
-						groupMap,
-					),
+				const result = checkCategoryCompletion(
+					parseToCategory,
+					checkedCourses,
+					groupMap,
 				);
+				categoryResults.push(result);
 			}
+			programmes.push({
+				id: programme.id,
+				name: programme.name,
+				categories: categoryResults,
+				completedCourses: Array.from(studiedCourses.values()),
+			});
 		}
-		console.log('Done checking all programmes', studiedCourses);
+		return programmes;
 	}
 }

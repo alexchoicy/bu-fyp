@@ -1,4 +1,4 @@
-import type { JWTCustomPayloadUserInfo } from "@fyp/api/auth/types";
+import type { JWTCustomPayload, JWTCustomPayloadUserInfo, UserRole } from "@fyp/api/auth/types";
 import { useAuthUser } from "~/composables/useAuthUser";
 
 function isPublicRoute(to: ReturnType<typeof useRoute>) {
@@ -10,6 +10,14 @@ function isPublicRoute(to: ReturnType<typeof useRoute>) {
   }
 
   return to.meta.public === true;
+}
+
+function isAllowedRoute(to: ReturnType<typeof useRoute>, user: JWTCustomPayloadUserInfo) {
+  const allowedRoles = to.meta.allowedRoles as UserRole[];
+  if (!allowedRoles || allowedRoles.length === 0) {
+    return true;
+  }
+  return allowedRoles.includes(user.role);
 }
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -24,21 +32,30 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!user) {
       return navigateTo("/auth/login");
     }
+    if (!isAllowedRoute(to, user.info)) {
+      return navigateTo("/");
+    }
     return;
   }
 
   try {
     const { authenticated, user } = await $fetch<{
       authenticated: boolean;
-      user?: JWTCustomPayloadUserInfo;
+      user?: JWTCustomPayload;
     }>("/api/auth/session", { credentials: "include" });
 
     if (!authenticated) {
       authUser.value = null;
       return navigateTo("/auth/login");
     }
-
-    authUser.value = user ?? null;
+    if (!user) {
+      authUser.value = null;
+      return navigateTo("/auth/login");
+    }
+    if (!isAllowedRoute(to, user.info)) {
+      return navigateTo("/");
+    }
+    authUser.value = user.info ?? null;
   } catch {
     authUser.value = null;
     return navigateTo("/auth/login");

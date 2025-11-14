@@ -1,3 +1,4 @@
+import { id } from "zod/locales";
 import { CourseSchema } from "../course/types.js";
 import { z } from "zod";
 
@@ -51,7 +52,14 @@ export const GroupSchema = z.object({
 export type Group = z.infer<typeof GroupSchema>;
 
 export const ProgrammeCheckCategorySchema = CategorySchema.extend({
-  completed: z.boolean(),
+  isCompleted: z.boolean(),
+  groupDetails: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["course", "tag"]),
+      name: z.string(),
+    })
+  ),
 });
 
 export type ProgrammeCheckCategory = z.infer<
@@ -59,8 +67,14 @@ export type ProgrammeCheckCategory = z.infer<
 >;
 
 export const ProgrammeCheckSchema = z.object({
-  programmeId: z.string(),
-  completedCourses: z.array(CourseSchema),
+  id: z.string(),
+  completedCourses: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      grade: z.string().optional(),
+    })
+  ),
   name: z.string(),
   categories: z.array(ProgrammeCheckCategorySchema),
 });

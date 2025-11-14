@@ -11,7 +11,7 @@ export type UserRole = z.infer<typeof UserRolesSchema>;
 
 export interface JWTCustomPayloadUserInfo {
   uid: string;
-  role?: UserRole;
+  role: UserRole;
 }
 
 export interface JWTCustomPayload {
