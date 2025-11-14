@@ -12,6 +12,7 @@ export const CourseSchema: z.ZodType<{
   id?: string;
   name: string;
   credit: number;
+  description?: string;
   code?: CourseCode;
   courseNumber: number;
   is_active: boolean;
@@ -22,6 +23,7 @@ export const CourseSchema: z.ZodType<{
   z.object({
     id: z.string().optional(),
     name: z.string(),
+    description: z.string().optional(),
     credit: z.number(),
     code: CourseCodeSchema.optional(),
     courseNumber: z.number(),
