@@ -27,7 +27,7 @@ export function getAllGroupsFromCategory(data: RuleNode): string[] {
 export function checkGroupCompletion(
   groupID: string,
   selectionMode: CourseSelectionMode,
-  min_credit: number, // only for min-credit mode
+  minCredit: number, // only for min-credit mode
   completedCourses: Map<string, Course>, //courseID -> course
   groupMap: Map<string, { course: Course[]; tag: CourseCode[] }> //groupID -> courses or accept tags in that group
 ): boolean {
@@ -93,12 +93,13 @@ export function checkGroupCompletion(
       }
     }
 
-    return totalCredits >= min_credit;
+    return totalCredits >= minCredit;
   }
 
   return false;
 }
 
+//Hey why it is a MAP, i think it don't need to be a map
 // WHY I AM SO SMART
 export function checkCategoryCompletion(
   category: Category,
