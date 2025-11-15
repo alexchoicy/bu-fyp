@@ -1,4 +1,5 @@
 import { Course } from '#database/entities/course.js';
+import { Programme } from '#database/entities/programme.js';
 import { StudentCourse, User } from '#database/entities/user.js';
 import { CourseCode } from '@fyp/api/course/types';
 import { normalizeAcademicYear } from '@fyp/api/course/utils';
@@ -6,6 +7,7 @@ import {
 	Category as CategoryType,
 	ProgrammeCheck,
 	ProgrammeCheckCategory,
+	ProgrammeListItem,
 	RuleNode,
 } from '@fyp/api/program/types';
 import { checkCategoryCompletion } from '@fyp/api/program/utils';
@@ -140,5 +142,57 @@ export class UserService {
 		await this.em.persistAndFlush(studentCourse);
 
 		return studentCourse;
+	}
+
+	async getUserProgrammes(userId: string): Promise<ProgrammeListItem[]> {
+		const user = await this.em.findOne(
+			User,
+			{ id: userId },
+			{ populate: ['programmes'] },
+		);
+
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		return user.programmes
+			.getItems()
+			.map((programme) => this.mapProgramme(programme));
+	}
+
+	async addProgramme(
+		userId: string,
+		programmeId: string,
+	): Promise<ProgrammeListItem> {
+		const user = await this.em.findOne(
+			User,
+			{ id: userId },
+			{ populate: ['programmes'] },
+		);
+
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		const programme = await this.em.findOne(Programme, { id: programmeId });
+
+		if (!programme) {
+			throw new NotFoundException('Programme not found');
+		}
+
+		if (!user.programmes.contains(programme)) {
+			user.programmes.add(programme);
+			await this.em.flush();
+		}
+
+		return this.mapProgramme(programme);
+	}
+
+	private mapProgramme(programme: Programme): ProgrammeListItem {
+		return {
+			id: programme.id,
+			name: programme.name,
+			version: programme.version,
+		};
 	}
 }

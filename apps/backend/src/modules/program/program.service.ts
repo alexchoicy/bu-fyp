@@ -1,7 +1,10 @@
 import { Category } from '#database/entities/category.js';
 import { GroupEntity } from '#database/entities/group.js';
 import { Programme } from '#database/entities/programme.js';
-import { Programme as ProgrammeType } from '@fyp/api/program/types';
+import {
+	ProgrammeListItem,
+	Programme as ProgrammeType,
+} from '@fyp/api/program/types';
 import { getAllGroupsFromCategory } from '@fyp/api/program/utils';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
@@ -64,9 +67,23 @@ export class ProgramService {
 					'categories',
 					'categories.groups',
 					'categories.groups.groupCourses',
+					'categories.groups.groupCourses.course',
 				],
 			},
 		);
 		return program;
+	}
+
+	async listProgrammes(): Promise<ProgrammeListItem[]> {
+		const programmes = await this.em.find(Programme, {});
+		return programmes.map((programme) => this.mapProgramme(programme));
+	}
+
+	private mapProgramme(programme: Programme): ProgrammeListItem {
+		return {
+			id: programme.id,
+			name: programme.name,
+			version: programme.version,
+		};
 	}
 }

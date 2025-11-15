@@ -99,7 +99,7 @@ export function checkGroupCompletion(
   return false;
 }
 
-//Hey why it is a MAP, i think it don't need to be a map
+// Hey why it is a MAP, i think it don't need to be a map
 // WHY I AM SO SMART
 export function checkCategoryCompletion(
   category: Category,

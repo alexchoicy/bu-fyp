@@ -15,4 +15,9 @@ export class ProgramController {
 	createProgram(@Body() data: CreateProgrammeDto) {
 		return this.programService.createProgram(data);
 	}
+
+	@Get()
+	async listProgrammes() {
+		return this.programService.listProgrammes();
+	}
 }

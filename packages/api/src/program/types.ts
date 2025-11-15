@@ -80,3 +80,19 @@ export const ProgrammeCheckSchema = z.object({
 });
 
 export type ProgrammeCheck = z.infer<typeof ProgrammeCheckSchema>;
+
+export const ProgrammeListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+});
+
+export type ProgrammeListItem = z.infer<typeof ProgrammeListItemSchema>;
+
+export const ProgrammeAssignmentRequestSchema = z.object({
+  programmeId: z.string(),
+});
+
+export type ProgrammeAssignmentRequest = z.infer<
+  typeof ProgrammeAssignmentRequestSchema
+>;
