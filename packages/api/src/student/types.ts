@@ -3,7 +3,7 @@ import {
   StudentCourseStatusSchema,
   TermCodeSchema,
 } from "../static/types.js";
-import { CourseSchema } from "../course/types.js";
+import { AcademicYearSchema, CourseSchema } from "../course/types.js";
 import { z } from "zod";
 export const StudentCourseRequestSchema = z.object({
   courseID: z.string(),
@@ -11,7 +11,7 @@ export const StudentCourseRequestSchema = z.object({
   grade: GradeSchema,
   term: TermCodeSchema,
   sectionID: z.string(),
-  year: z.string(),
+  year: AcademicYearSchema,
 });
 
 export type StudentCourseRequest = z.infer<typeof StudentCourseRequestSchema>;
@@ -22,7 +22,7 @@ export const StudentCourse = z.object({
   studentCourseStatus: StudentCourseStatusSchema,
   grade: GradeSchema,
   term: TermCodeSchema,
-  year: z.string(),
+  year: AcademicYearSchema,
 });
 
 export type StudentCourse = z.infer<typeof StudentCourse>;

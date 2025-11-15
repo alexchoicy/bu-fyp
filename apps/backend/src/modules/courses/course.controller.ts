@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CourseService } from './course.service.js';
-import { CreateCourseDto } from '#types/dto/course.js';
+import { CreateCourseDto, CreateCourseSectionDto } from '#types/dto/course.js';
 
 @Controller('courses')
 export class CourseController {
@@ -24,5 +24,13 @@ export class CourseController {
 	@Get(':id/sections')
 	async getCourseSections(@Param('id') id: string) {
 		return this.courseService.getCourseSections(id);
+	}
+
+	@Post(':id/sections')
+	async createCourseSection(
+		@Param('id') id: string,
+		@Body() sectionData: CreateCourseSectionDto,
+	) {
+		return this.courseService.createCourseSection(id, sectionData);
 	}
 }

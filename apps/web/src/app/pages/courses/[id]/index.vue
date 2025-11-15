@@ -78,6 +78,9 @@
         </div>
       </TabsContent>
       <TabsContent value="syllabus"></TabsContent>
+      <TabsContent value="schedule">
+        <CourseSchedule :course="data" />
+      </TabsContent>
     </Tabs>
   </div>
 </template>

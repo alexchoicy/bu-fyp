@@ -1,6 +1,7 @@
 import { Course } from '#database/entities/course.js';
 import { StudentCourse, User } from '#database/entities/user.js';
 import { CourseCode } from '@fyp/api/course/types';
+import { normalizeAcademicYear } from '@fyp/api/course/utils';
 import {
 	Category as CategoryType,
 	ProgrammeCheck,
@@ -134,7 +135,7 @@ export class UserService {
 		studentCourse.status = data.status;
 		studentCourse.grade = data.grade;
 		studentCourse.term = data.term;
-		studentCourse.year = data.year;
+		studentCourse.year = normalizeAcademicYear(data.year);
 
 		await this.em.persistAndFlush(studentCourse);
 

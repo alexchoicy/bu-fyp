@@ -22,11 +22,19 @@
     failed: "Failed",
     planned: "Planned",
   };
-  const request = ref({} as StudentCourseRequest);
+  const [currentAcademicYear] = generateYearOptions(0, 0);
+
+  const request = ref({
+    year: currentAcademicYear ?? "",
+  } as StudentCourseRequest);
 
   const disabledGrades = ref<boolean>(true);
 
-  function onStatusChange(newStatus: StudentCourseStatus) {
+  function onStatusChange(value: unknown) {
+    const newStatus = value as StudentCourseStatus | null;
+    if (!newStatus) {
+      return;
+    }
     switch (newStatus) {
       case "planned":
       case "dropped":
@@ -66,8 +74,16 @@
     });
   };
 
-  function onCourseChange(selectedCourse: { label: string; value: string }) {
-    request.value.courseID = selectedCourse.value;
+  function onCourseChange(value: unknown) {
+    if (!value || typeof value !== "object") {
+      request.value.courseID = "";
+      return;
+    }
+
+    const maybeCourse = value as { label?: unknown; value?: unknown };
+    if (typeof maybeCourse.value === "string") {
+      request.value.courseID = maybeCourse.value;
+    }
   }
 </script>
 
@@ -148,13 +164,13 @@
             </Select>
           </div>
           <div class="space-y-2">
-            <Label>Years</Label>
+            <Label>Academic Year</Label>
             <Select v-model="request.year">
               <SelectTrigger class="w-full">
                 <SelectValue placeholder="Select year..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="year in generateYearOptions()" :key="year" :value="year.toString()">
+                <SelectItem v-for="year in generateYearOptions()" :key="year" :value="year">
                   {{ year }}
                 </SelectItem>
               </SelectContent>

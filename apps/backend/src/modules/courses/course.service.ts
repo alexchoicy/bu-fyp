@@ -1,6 +1,15 @@
-import { Code, Course, CourseSection } from '#database/entities/course.js';
+import {
+	Code,
+	Course,
+	CourseMeeting,
+	CourseSection,
+} from '#database/entities/course.js';
 import { GroupCourse, GroupEntity } from '#database/entities/group.js';
-import { Course as CourseType } from '@fyp/api/course/types';
+import {
+	Course as CourseType,
+	CreateCourseSection,
+} from '@fyp/api/course/types';
+import { normalizeAcademicYear } from '@fyp/api/course/utils';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
@@ -32,6 +41,7 @@ export class CourseService {
 				prerequisites: [],
 				antiRequisites: [],
 				groups: [],
+				sections: [],
 			})),
 			antiRequisites: course.antiRequisites.getItems().map((antiReq) => ({
 				id: antiReq.id,
@@ -42,10 +52,26 @@ export class CourseService {
 				prerequisites: [],
 				antiRequisites: [],
 				groups: [],
+				sections: [],
 			})),
 			groups: course.groupLinks.getItems().map((link) => ({
 				id: link.group.id,
 				name: link.group.name,
+			})),
+			sections: course.sections.getItems().map((section) => ({
+				id: section.id,
+				capacity: section.position,
+				meetings: section.meetings.getItems().map((meeting) => ({
+					id: meeting.id,
+					day: meeting.day,
+					startTime: meeting.startTime,
+					endTime: meeting.endTime,
+					location: meeting.location,
+					sectionType: meeting.sectionType,
+				})),
+				term: section.term,
+				position: section.position,
+				year: normalizeAcademicYear(section.year),
 			})),
 		};
 	}
@@ -60,6 +86,8 @@ export class CourseService {
 					'antiRequisites',
 					'prerequisites',
 					'groupLinks',
+					'sections',
+					'sections.meetings',
 				],
 			},
 		);
@@ -77,6 +105,8 @@ export class CourseService {
 					'antiRequisites',
 					'prerequisites',
 					'groupLinks',
+					'sections',
+					'sections.meetings',
 				],
 			},
 		);
@@ -129,5 +159,40 @@ export class CourseService {
 			},
 		);
 		return sections;
+	}
+
+	async createCourseSection(
+		courseId: string,
+		sectionData: CreateCourseSection,
+	) {
+		const course = await this.em.findOne(Course, { id: courseId });
+		if (!course) throw new NotFoundException('Course not found');
+
+		const section = this.em.create(CourseSection, {
+			course,
+			term: sectionData.term,
+			year: normalizeAcademicYear(sectionData.year),
+			position: sectionData.position,
+		});
+
+		this.em.persist(section);
+
+		for (const meetingData of sectionData.meetings) {
+			const meeting = this.em.create(CourseMeeting, {
+				courseSection: section,
+				sectionType: meetingData.sectionType,
+				day: meetingData.day,
+				startTime: meetingData.startTime,
+				endTime: meetingData.endTime,
+				location: meetingData.location,
+			});
+			section.meetings.add(meeting);
+			this.em.persist(meeting);
+		}
+
+		await this.em.flush();
+		await this.em.populate(section, ['meetings']);
+
+		return section;
 	}
 }
