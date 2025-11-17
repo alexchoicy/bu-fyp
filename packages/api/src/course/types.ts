@@ -30,7 +30,7 @@ export const CourseSchema: z.ZodType<{
   prerequisites: Course[];
   antiRequisites: Course[];
   groups: Group[];
-  sections: CourseSection[];
+  sections?: CourseSection[];
 }> = z.lazy(() =>
   z.object({
     id: z.string().optional(),
@@ -43,7 +43,7 @@ export const CourseSchema: z.ZodType<{
     prerequisites: z.array(CourseSchema),
     antiRequisites: z.array(CourseSchema),
     groups: z.array(GroupSchema),
-    sections: z.array(CourseSectionSchema),
+    sections: z.array(CourseSectionSchema).optional(),
   })
 );
 
@@ -73,7 +73,7 @@ export type CourseMeeting = z.infer<typeof CourseMeetingSchema>;
 
 export const CourseSectionSchema = z.object({
   id: z.string().optional(),
-  capacity: z.number(),
+  position: z.number(),
   meetings: z.array(CourseMeetingSchema),
   term: TermCodeSchema,
   year: AcademicYearSchema,

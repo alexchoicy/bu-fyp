@@ -26,6 +26,7 @@ export class UserService {
 			{
 				populate: [
 					'studiedCourses',
+					'studiedCourses.course',
 					'programmes',
 					'programmes.categories',
 					'programmes.categories.groups',
@@ -93,6 +94,240 @@ export class UserService {
 		}
 		return programmes;
 	}
+
+	// async checkGraduationRequirements(userId: string) {
+	// 	const user = await this.em.findOne(
+	// 		User,
+	// 		{ id: userId },
+	// 		{
+	// 			populate: [
+	// 				'studiedCourses',
+	// 				'studiedCourses.course',
+	// 				'studiedCourses.course.code',
+	// 				'programmes',
+	// 				'programmes.categories',
+	// 				'programmes.categories.groups',
+	// 				'programmes.categories.groups.groupCourses',
+	// 				'programmes.categories.groups.groupCourses.course',
+	// 				'programmes.categories.groups.groupCourses.course.code',
+	// 				'programmes.categories.groups.groupCourses.code',
+	// 			],
+	// 		},
+	// 	);
+
+	// 	if (!user) {
+	// 		throw new NotFoundException('User not found');
+	// 	}
+
+	// 	const studentCourseMap = new Map<
+	// 		string,
+	// 		{
+	// 			status: StudentCourseStatus;
+	// 			grade: string | null;
+	// 			course: Course;
+	// 		}
+	// 	>();
+
+	// 	for (const studentCourse of user.studiedCourses) {
+	// 		if (!studentCourse.course?.id) {
+	// 			continue;
+	// 		}
+
+	// 		studentCourseMap.set(studentCourse.course.id, {
+	// 			status: studentCourse.status,
+	// 			grade: studentCourse.grade ?? null,
+	// 			course: studentCourse.course,
+	// 		});
+	// 	}
+
+	// 	const programmeResults: ProgrammeRequirement[] = [];
+
+	// 	for (const programme of user.programmes) {
+	// 		const programmeCategories = programme.categories
+	// 			.getItems()
+	// 			.slice()
+	// 			.sort((a, b) => b.priority - a.priority);
+
+	// 		const categorySummaries: ProgrammeRequirementCategory[] = [];
+
+	// 		let programmeTotalCredits = 0;
+	// 		let programmeCompletedCredits = 0;
+
+	// 		for (const category of programmeCategories) {
+	// 			const groupMap = new Map<
+	// 				string,
+	// 				{ courses: Course[]; tagIds: string[] }
+	// 			>();
+
+	// 			for (const group of category.groups) {
+	// 				for (const groupCourse of group.groupCourses) {
+	// 					const entry = groupMap.get(group.id) ?? {
+	// 						courses: [],
+	// 						tagIds: [],
+	// 					};
+
+	// 					if (groupCourse.course) {
+	// 						entry.courses.push(groupCourse.course);
+	// 					}
+
+	// 					if (groupCourse.code) {
+	// 						entry.tagIds.push(groupCourse.code.id);
+	// 					}
+
+	// 					groupMap.set(group.id, entry);
+	// 				}
+	// 			}
+
+	// 			const courseEntries = new Map<
+	// 				string,
+	// 				ProgrammeRequirementCourse
+	// 			>();
+	// 			const tagIds = new Set<string>();
+
+	// 			for (const { courses, tagIds: ids } of groupMap.values()) {
+	// 				for (const course of courses) {
+	// 					if (!course.id) {
+	// 						continue;
+	// 					}
+	// 					if (!courseEntries.has(course.id)) {
+	// 						const credits = course.credit ?? 0;
+	// 						courseEntries.set(course.id, {
+	// 							id: course.id,
+	// 							name: course.name,
+	// 							credits,
+	// 							status: 'not-started',
+	// 							grade: null,
+	// 							courseNumber: course.courseNumber,
+	// 							tag: course.code?.tag ?? '',
+	// 						});
+	// 					}
+	// 				}
+
+	// 				for (const tagId of ids) {
+	// 					tagIds.add(tagId);
+	// 				}
+	// 			}
+	// 			let categoryCompletedCredits = 0;
+	// 			const matchedCourseIds = new Set<string>();
+
+	// 			for (const [courseId, entry] of courseEntries) {
+	// 				const studentCourse = studentCourseMap.get(courseId);
+	// 				if (!studentCourse) {
+	// 					continue;
+	// 				}
+
+	// 				const status = this.mapRequirementStatus(
+	// 					studentCourse.status,
+	// 				);
+	// 				entry.status = status;
+	// 				entry.grade = studentCourse.grade;
+
+	// 				if (status === 'completed') {
+	// 					categoryCompletedCredits += entry.credits;
+	// 				}
+
+	// 				matchedCourseIds.add(courseId);
+	// 			}
+
+	// 			for (const [courseId, studentCourse] of studentCourseMap) {
+	// 				if (matchedCourseIds.has(courseId)) {
+	// 					continue;
+	// 				}
+
+	// 				const codeId = studentCourse.course.code?.id;
+	// 				if (!codeId || !tagIds.has(codeId)) {
+	// 					continue;
+	// 				}
+
+	// 				const credits = studentCourse.course.credit ?? 0;
+	// 				const status = this.mapRequirementStatus(
+	// 					studentCourse.status,
+	// 				);
+
+	// 				courseEntries.set(courseId, {
+	// 					id: courseId,
+	// 					tag: studentCourse.course.code?.tag ?? '',
+	// 					courseNumber: studentCourse.course.courseNumber,
+	// 					name: studentCourse.course.name,
+	// 					credits,
+	// 					status,
+	// 					grade: studentCourse.grade,
+	// 				});
+
+	// 				if (status === 'completed') {
+	// 					categoryCompletedCredits += credits;
+	// 				}
+
+	// 				matchedCourseIds.add(courseId);
+	// 			}
+
+	// 			const entryCreditsSum = Array.from(
+	// 				courseEntries.values(),
+	// 			).reduce((total, course) => total + course.credits, 0);
+
+	// 			const categoryTotalCredits =
+	// 				category.min_credit > 0
+	// 					? category.min_credit
+	// 					: entryCreditsSum;
+
+	// 			categoryCompletedCredits = Math.min(
+	// 				categoryCompletedCredits,
+	// 				categoryTotalCredits,
+	// 			);
+
+	// 			const statusPriority: Record<RequirementCourseStatus, number> =
+	// 				{
+	// 					completed: 0,
+	// 					'in-progress': 1,
+	// 					'not-started': 2,
+	// 				};
+
+	// 			const sortedCourses = Array.from(courseEntries.values()).sort(
+	// 				(a, b) => {
+	// 					const statusDiff =
+	// 						statusPriority[a.status] - statusPriority[b.status];
+	// 					if (statusDiff !== 0) {
+	// 						return statusDiff;
+	// 					}
+
+	// 					return a.tag.localeCompare(b.tag);
+	// 				},
+	// 			);
+
+	// 			categorySummaries.push({
+	// 				id: category.id,
+	// 				name: category.name,
+	// 				rules: category.rules as RuleNode,
+	// 				description: category.notes ?? null,
+	// 				totalCredits: categoryTotalCredits,
+	// 				completedCredits: categoryCompletedCredits,
+	// 				courses: sortedCourses,
+	// 			});
+
+	// 			programmeTotalCredits += categoryTotalCredits;
+	// 			programmeCompletedCredits += categoryCompletedCredits;
+	// 		}
+	// 		programmeCompletedCredits = Math.min(
+	// 			programmeCompletedCredits,
+	// 			programmeTotalCredits,
+	// 		);
+
+	// 		const progressPercentage =
+	// 			programmeTotalCredits > 0
+	// 				? (programmeCompletedCredits / programmeTotalCredits) * 100
+	// 				: 0;
+
+	// 		programmeResults.push({
+	// 			programmeId: programme.id,
+	// 			programmeName: programme.name,
+	// 			totalCredits: programmeTotalCredits,
+	// 			completedCredits: programmeCompletedCredits,
+	// 			progressPercentage,
+	// 			categories: categorySummaries,
+	// 		});
+	// 	}
+	// 	return programmeResults;
+	// }
 
 	async getCoursesTaken(userId: string): Promise<StudentCourse[]> {
 		const user = await this.em.find(

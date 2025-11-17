@@ -18,7 +18,7 @@
     };
   });
 
-  const filteredCourses = computed(() => {
+  const filteredCoursesRecord = computed(() => {
     const list = data?.value ?? [];
     if (activeTab.value === "all") return list;
     return list.filter((c) => c?.studentCourseStatus === activeTab.value);
@@ -78,22 +78,22 @@
       </div>
       <TabsContent value="all">
         <div class="grid gap-4 grid-cols-1">
-          <CourseCard v-for="course in filteredCourses" :key="course.id" :course="course" />
+          <CourseCard v-for="record in filteredCoursesRecord" :key="record.id" :record="record" />
         </div>
       </TabsContent>
       <TabsContent value="enrolled">
         <div class="grid gap-4 grid-cols-1">
-          <CourseCard v-for="course in filteredCourses" :key="course.id" :course="course" />
+          <CourseCard v-for="record in filteredCoursesRecord" :key="record.id" :record="record" />
         </div>
       </TabsContent>
       <TabsContent value="completed">
         <div class="grid gap-4 grid-cols-1">
-          <CourseCard v-for="course in filteredCourses" :key="course.id" :course="course" />
+          <CourseCard v-for="record in filteredCoursesRecord" :key="record.id" :record="record" />
         </div>
       </TabsContent>
       <TabsContent value="planned">
         <div class="grid gap-4 grid-cols-1">
-          <CourseCard v-for="course in filteredCourses" :key="course.id" :course="course" />
+          <CourseCard v-for="record in filteredCoursesRecord" :key="record.id" :record="record" />
         </div>
       </TabsContent>
     </Tabs>

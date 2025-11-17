@@ -111,5 +111,5 @@ export class StudentCourse {
 	year!: string;
 
 	@ManyToOne(() => CourseSection)
-	courseSection!: CourseSection;
+	courseSection!: CourseSection | null;
 }

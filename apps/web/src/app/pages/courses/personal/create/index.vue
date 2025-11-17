@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import type { Course } from "@fyp/api/course/types";
+  import type { Course, CourseSection } from "@fyp/api/course/types";
   import { type StudentCourseStatus, TermMap, GradeLabels } from "@fyp/api/static/types";
   import { StudentCourseRequestSchema, type StudentCourseRequest } from "@fyp/api/student/types";
   import { Check, ChevronsUpDown, Search } from "lucide-vue-next";
@@ -85,6 +85,20 @@
       request.value.courseID = maybeCourse.value;
     }
   }
+
+  const sections = ref<CourseSection[]>([]);
+
+  watch(
+    () => request.value.courseID,
+    async (newCourseID) => {
+      if (!newCourseID) {
+        return;
+      }
+
+      const newSections = await useNuxtApp().$backend<CourseSection[]>(`courses/${newCourseID}/sections`);
+      sections.value = newSections;
+    },
+  );
 </script>
 
 <template>
@@ -141,9 +155,9 @@
                   <SelectValue placeholder="Select section..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">Section A</SelectItem>
-                  <SelectItem value="B">Section B</SelectItem>
-                  <SelectItem value="C">Section C</SelectItem>
+                  <SelectItem v-for="section in sections" :key="section.id" :value="section.id!">
+                    {{ section.id }}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
