@@ -34,10 +34,10 @@ export function checkGroupCompletion(
 ): boolean {
   const groupData = groupMap.get(groupID);
 
-  if (!groupData) {
+  if (!groupData || groupID != "0") {
     return false;
   }
-
+  console.log("here?");
   const { course: groupCourses, tag: groupTags } = groupData;
 
   if (selectionMode === "all-of") {
@@ -141,6 +141,32 @@ export function checkCategoryCompletion(
         console.log("Node:", node, "with operator ANY has result:", anyTrue);
         return anyTrue;
       }
+    }
+
+    if (node.courseSelectionMode === "min-credit") {
+      const requiredCredits = category.min_credit || 0;
+      let accumulatedCredits = 0;
+      for (const course of completedCourses.values()) {
+        // check if course is in group courses
+        const groupData = groupMap.get(node.groupID!);
+        if (!groupData) continue;
+
+        const inGroupCourses = groupData.course.some(
+          (groupCourse) => groupCourse.id === course.id
+        );
+        if (inGroupCourses) {
+          accumulatedCredits += course.credit || 0;
+          continue;
+        }
+
+        if (
+          course.code &&
+          groupData.tag.some((tag) => tag.id === course.code?.id)
+        ) {
+          accumulatedCredits += course.credit || 0;
+        }
+      }
+      return accumulatedCredits >= requiredCredits;
     }
 
     return false;

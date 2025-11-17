@@ -31,6 +31,10 @@ export class UserService {
 					'programmes.categories',
 					'programmes.categories.groups',
 					'programmes.categories.groups.groupCourses',
+					'programmes.categories.groups.groupCourses.course',
+					'programmes.categories.groups.groupCourses.course.code',
+					'programmes.categories.groups.groupCourses.code',
+					'programmes.categories.groups.groupCourses.code.tag',
 				],
 			},
 		);
@@ -54,6 +58,7 @@ export class UserService {
 					string,
 					{ course: Course[]; tag: CourseCode[] }
 				>();
+
 				for (const group of category.groups) {
 					for (const gc of group.groupCourses) {
 						//whatever zzz
@@ -68,7 +73,6 @@ export class UserService {
 						}
 					}
 				}
-
 				const parseToCategory: CategoryType = {
 					id: category.id,
 					name: category.name,
