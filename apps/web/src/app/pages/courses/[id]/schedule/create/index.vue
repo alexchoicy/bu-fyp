@@ -30,11 +30,13 @@
     addMeeting();
   });
 
-  function submitForm() {
-    useNuxtApp().$backend(`/courses/${id}/sections`, {
+  async function submitForm() {
+    await useNuxtApp().$backend(`/courses/${id}/sections`, {
       method: "POST",
       body: request.value,
     });
+
+    await useRouter().push(`/courses/${id}`);
   }
 </script>
 

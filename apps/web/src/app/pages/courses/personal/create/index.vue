@@ -72,6 +72,8 @@
       method: "POST",
       body: request.value,
     });
+
+    await useRouter().push("/courses/personal");
   };
 
   function onCourseChange(value: unknown) {

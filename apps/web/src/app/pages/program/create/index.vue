@@ -48,6 +48,8 @@
         categories: sendSort,
       },
     });
+
+    await useRouter().push("/");
   }
 </script>
 

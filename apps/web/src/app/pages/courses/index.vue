@@ -7,6 +7,21 @@
   function navigateToCourse(courseId: string) {
     navigateTo(`courses/${courseId}`);
   }
+
+  const searchWord = ref("");
+
+  const filteredCourses = computed(() => {
+    if (!searchWord.value) {
+      return data.value || [];
+    }
+    return (
+      data.value?.filter(
+        (course) =>
+          course.name.toLowerCase().includes(searchWord.value.toLowerCase()) ||
+          `${course.code?.tag}${course.courseNumber}`.toLowerCase().includes(searchWord.value.toLowerCase()),
+      ) || []
+    );
+  });
 </script>
 
 <template>
@@ -24,7 +39,7 @@
         <div class="flex flex-col gap-4">
           <div class="relative flex-1">
             <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search courses by name, code, ..." class="pl-10" />
+            <Input v-model="searchWord" placeholder="Search courses by name, code, ..." class="pl-10" />
           </div>
           <div class="flex flex-wrap gap-3"></div>
         </div>
@@ -32,7 +47,7 @@
     </Card>
 
     <Card
-      v-for="course in data"
+      v-for="course in filteredCourses"
       :key="course.id"
       class="cursor-pointer hover:shadow-lg transition-shadow"
       @click="navigateToCourse(course.id!)">

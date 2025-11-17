@@ -24,6 +24,7 @@ export function getAllGroupsFromCategory(data: RuleNode): string[] {
   return groups;
 }
 
+//the remove completed should after the check
 export function checkGroupCompletion(
   groupID: string,
   selectionMode: CourseSelectionMode,
