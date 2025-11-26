@@ -1,14 +1,15 @@
+using Backend.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
-
-string db = builder.Configuration["DataBase:ConnectionString"];
-
-Console.WriteLine("test" + db);
-Console.WriteLine("Hello, World!");
-// Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContextPool<AppDbContext>(opt =>
+    opt.UseNpgsql(builder.Configuration["DataBase:ConnectionString"]));
+
 
 var app = builder.Build();
 
