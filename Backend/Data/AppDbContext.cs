@@ -36,6 +36,9 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<CourseMeeting> CourseMeetings { get; set; }
     public DbSet<CoursePreReq> CoursePreReqs { get; set; }
     public DbSet<CourseAntiReq> CourseAntiReqs { get; set; }
+    public DbSet<MediumOfInstruction> MediumOfInstructions { get; set; }
+    public DbSet<CourseVersionMedium> CourseVersionMediums { get; set; }
+    public DbSet<CourseAssessment> CourseAssessments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

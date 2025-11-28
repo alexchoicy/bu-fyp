@@ -12,7 +12,7 @@ public class Course
     public int Id { get; set; }
 
     [Column("name")]
-    public string Name { get; set; } = string.Empty;
+    public required string Name { get; set; }
 
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
@@ -24,9 +24,8 @@ public class Course
     public Code Code { get; set; } = null!;
 
     [Column("course_number")]
-    public string CourseNumber { get; set; } = string.Empty;
+    public required string CourseNumber { get; set; }
 
-    // Navigation properties
     public ICollection<CourseVersion> CourseVersions { get; set; } = new List<CourseVersion>();
     public ICollection<GroupCourse> GroupCourses { get; set; } = new List<GroupCourse>();
     public ICollection<CourseDepartment> CourseDepartments { get; set; } = new List<CourseDepartment>();
