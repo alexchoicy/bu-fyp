@@ -10,7 +10,7 @@ public class StudentProgramme
 {
     [Required]
     [Column("student_id")]
-    public int StudentId { get; set; }
+    public string StudentId { get; set; } = string.Empty;
 
     [ForeignKey(nameof(StudentId))]
     public User Student { get; set; } = null!;

@@ -1,16 +1,16 @@
 using Backend.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<User>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
 
-    // User & Role
-    public DbSet<Role> Roles { get; set; }
     public DbSet<User> Users { get; set; }
 
     // Term
@@ -43,7 +43,6 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure CoursePreReq relationships
         modelBuilder.Entity<CoursePreReq>()
             .HasOne(cp => cp.CourseVersion)
             .WithMany(cv => cv.Prerequisites)
@@ -56,7 +55,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(cp => cp.RequiredCourseVersionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure CourseAntiReq relationships
         modelBuilder.Entity<CourseAntiReq>()
             .HasOne(ca => ca.CourseVersion)
             .WithMany(cv => cv.AntiRequisites)
@@ -69,7 +67,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(ca => ca.ExcludedCourseVersionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure CategoryGroup relationships
         modelBuilder.Entity<CategoryGroup>()
             .HasOne(cg => cg.Category)
             .WithMany(c => c.CategoryGroups)
@@ -82,7 +79,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(cg => cg.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure GroupCourse relationships
         modelBuilder.Entity<GroupCourse>()
             .HasOne(gc => gc.Group)
             .WithMany(g => g.GroupCourses)
@@ -103,14 +99,12 @@ public class AppDbContext : DbContext
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure Course-Code relationship
         modelBuilder.Entity<Course>()
             .HasOne(c => c.Code)
             .WithMany(code => code.Courses)
             .HasForeignKey(c => c.CodeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure CourseDepartment relationships (many-to-many between Course and Department)
         modelBuilder.Entity<CourseDepartment>()
             .HasOne(cd => cd.Course)
             .WithMany(c => c.CourseDepartments)
@@ -123,7 +117,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(cd => cd.DepartmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure ProgrammeCategory relationships
         modelBuilder.Entity<ProgrammeCategory>()
             .HasOne(pc => pc.ProgrammeVersion)
             .WithMany(pv => pv.ProgrammeCategories)
@@ -136,7 +129,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(pc => pc.CategoryId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure StudentProgramme relationships
         modelBuilder.Entity<StudentProgramme>()
             .HasOne(sp => sp.Student)
             .WithMany(u => u.StudentProgrammes)
@@ -148,5 +140,25 @@ public class AppDbContext : DbContext
             .WithMany(pv => pv.StudentProgrammes)
             .HasForeignKey(sp => sp.ProgrammeVersionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        List<IdentityRole> roles = new()
+    {
+        new IdentityRole
+        {
+            Id = "08fb9bd6-eeda-4063-9be8-ffadd4a09a39",
+            Name = Models.Roles.Admin.ToString(),
+            NormalizedName = Models.Roles.Admin.ToString().ToUpper(),
+            ConcurrencyStamp = "4e544a59-030f-4446-86ef-8ded2fa0aebf"
+        },
+        new IdentityRole
+        {
+            Id = "f54b9699-348d-45b3-8fbb-83d5591b2aef",
+            Name = Models.Roles.Student.ToString(),
+            NormalizedName = Models.Roles.Student.ToString().ToUpper(),
+            ConcurrencyStamp = "5bf897a4-3ddd-41f3-8f8a-5526f3b008dd"
+        }
+    };
+
+        modelBuilder.Entity<IdentityRole>().HasData(roles);
     }
 }

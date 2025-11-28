@@ -13,7 +13,5 @@ public class Term
 
     [Column("name")]
     public string Name { get; set; } = string.Empty;
-
-    // Navigation properties
     public ICollection<CourseSection> CourseSections { get; set; } = new List<CourseSection>();
 }

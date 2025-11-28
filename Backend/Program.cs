@@ -1,5 +1,9 @@
 using Backend.Data;
+using Backend.Data.Seed;
+using Backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +12,30 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContextPool<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration["DataBase:ConnectionString"]));
+{
+    opt.UseNpgsql(builder.Configuration["DataBase:ConnectionString"]);
+});
+
+// User Identity
+builder.Services.AddIdentity<User, IdentityRole>(opt =>
+{
+    //is FINE
+    opt.Password.RequireDigit = false;
+    opt.Password.RequireLowercase = false;
+    opt.Password.RequireNonAlphanumeric = false;
+    opt.Password.RequireUppercase = false;
+    opt.Password.RequiredLength = 4;
+}).AddEntityFrameworkStores<AppDbContext>();
+
+builder.Services.AddAuthentication().AddJwtBearer(opt =>
+{
+    opt.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidIssuer = builder.Configuration["JWT:Issuer"],
+        ValidAudience = builder.Configuration["JWT:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"]!))
+    };
+});
 
 
 var app = builder.Build();
@@ -19,9 +46,25 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// DB Migration
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+    Console.WriteLine("Database Migrated");
+    // Seed Users
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await UserSeed.SeedAsync(userManager, roleManager);
+
+    Console.WriteLine("Database Seeded");
+    Console.WriteLine(userManager.Users.Count());
+}
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+app.UseAuthentication();
 
 app.MapControllers();
 
