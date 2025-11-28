@@ -11,8 +11,6 @@ public class AppDbContext : IdentityDbContext<User>
     {
     }
 
-    public DbSet<User> Users { get; set; }
-
     // Term
     public DbSet<Term> Terms { get; set; }
 

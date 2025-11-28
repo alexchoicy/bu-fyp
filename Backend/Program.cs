@@ -1,6 +1,8 @@
 using Backend.Data;
 using Backend.Data.Seed;
 using Backend.Models;
+using Backend.Services;
+using Backend.Services.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -37,6 +39,9 @@ builder.Services.AddAuthentication().AddJwtBearer(opt =>
     };
 });
 
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 var app = builder.Build();
 
@@ -44,6 +49,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "v1");
+    });
 }
 
 // DB Migration
@@ -58,7 +68,6 @@ using (var scope = app.Services.CreateScope())
     await UserSeed.SeedAsync(userManager, roleManager);
 
     Console.WriteLine("Database Seeded");
-    Console.WriteLine(userManager.Users.Count());
 }
 
 app.UseHttpsRedirection();
