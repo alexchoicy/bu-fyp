@@ -1,8 +1,9 @@
 using Backend.Data;
 using Backend.Data.Seed;
 using Backend.Models;
-using Backend.Services;
+using Backend.Services.AI;
 using Backend.Services.Auth;
+using Backend.Services.Courses;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -41,6 +42,12 @@ builder.Services.AddAuthentication().AddJwtBearer(opt =>
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddSingleton<OpenAIProvider>();
+builder.Services.AddSingleton<GeminiProvider>();
+builder.Services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
+
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 
 var app = builder.Build();

@@ -6,15 +6,24 @@ namespace Backend.Models;
 public enum AssessmentCategory
 {
     Examination = 1,
-    TestOrQuiz = 2,
-    Assignment = 3,
-    Project = 4,
-    Presentation = 5,
+    Assignment = 2,
+    Project = 3,
+    GroupProject = 4,
+    SoloProject = 5,
     Participation = 6,
-    Portfolio = 7,
-    Practical = 8,
+    Presentation = 7,
     Other = 99
 }
+
+// This is only used for AI extraction
+public class AssessmentMethod
+{
+    public required string Name { get; set; }
+    public decimal Weighting { get; set; }
+    public AssessmentCategory Category { get; set; }
+    public string Description { get; set; } = string.Empty;
+}
+
 
 [Table("course_assessments")]
 public class CourseAssessment
