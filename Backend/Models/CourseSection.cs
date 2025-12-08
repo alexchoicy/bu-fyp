@@ -26,6 +26,9 @@ public class CourseSection
     [ForeignKey(nameof(TermId))]
     public Term Term { get; set; } = null!;
 
+    [Column("section_number")]
+    public int SectionNumber { get; set; }
+
     // Navigation properties
     public ICollection<CourseMeeting> CourseMeetings { get; set; } = new List<CourseMeeting>();
 }

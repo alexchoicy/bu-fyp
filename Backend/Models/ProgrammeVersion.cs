@@ -23,6 +23,20 @@ public class ProgrammeVersion
 
     [Column("last_edited_at")]
     public DateTime LastEditedAt { get; set; } = DateTime.UtcNow;
+    [Column("version_number")]
+    public int VersionNumber { get; set; }
+
+    [Required]
+    [Column("start_year")]
+    public int StartYear { get; set; }
+
+    [Required]
+    [Column("end_year")]
+    public int? EndYear { get; set; }
+
+    [Column("is_active")]
+    public bool IsActive { get; set; }
+
 
     // Navigation properties
     public ICollection<StudentProgramme> StudentProgrammes { get; set; } = new List<StudentProgramme>();

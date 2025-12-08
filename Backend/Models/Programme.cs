@@ -13,6 +13,8 @@ public class Programme
 
     [Column("name")]
     public string Name { get; set; } = string.Empty;
+    [Column("description")]
+    public string Description { get; set; } = string.Empty;
 
     public ICollection<ProgrammeVersion> ProgrammeVersions { get; set; } = new List<ProgrammeVersion>();
 }

@@ -72,7 +72,7 @@ public class DataSeed
             new() { Name = "English" },
             new() { Name = "Cantonese" },
             new() { Name = "Putonghua" },
-                        new() { Name = "Japanese" }
+            new() { Name = "Japanese" }
 
         };
 

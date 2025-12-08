@@ -17,6 +17,9 @@ public class Course
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
+    [Column("description")]
+    public string? Description { get; set; }
+
     [Column("code_id")]
     public int CodeId { get; set; }
 
@@ -26,7 +29,12 @@ public class Course
     [Column("course_number")]
     public required string CourseNumber { get; set; }
 
+    [Column("credit")]
+    public int Credit { get; set; } = 0;
+
     public ICollection<CourseVersion> CourseVersions { get; set; } = new List<CourseVersion>();
     public ICollection<GroupCourse> GroupCourses { get; set; } = new List<GroupCourse>();
     public ICollection<CourseDepartment> CourseDepartments { get; set; } = new List<CourseDepartment>();
+    public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
+
 }

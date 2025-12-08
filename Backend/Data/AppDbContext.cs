@@ -44,6 +44,12 @@ public class AppDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<CourseVersion>()
+            .ComplexCollection(cv => cv.CILOs, b => b.ToJson());
+
+        modelBuilder.Entity<CourseVersion>()
+            .ComplexCollection(cv => cv.TLAs, b => b.ToJson());
+
         modelBuilder.Entity<CoursePreReq>()
             .HasOne(cp => cp.CourseVersion)
             .WithMany(cv => cv.Prerequisites)
@@ -112,6 +118,19 @@ public class AppDbContext : IdentityDbContext<User>
             .HasForeignKey(cd => cd.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<CourseVersion>()
+            .HasOne(cv => cv.FromTerm)
+            .WithMany()
+            .HasForeignKey(cv => cv.FromTermId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CourseVersion>()
+            .HasOne(cv => cv.ToTerm)
+            .WithMany()
+            .HasForeignKey(cv => cv.ToTermId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<CourseDepartment>()
             .HasOne(cd => cd.Department)
             .WithMany(d => d.CourseDepartments)
@@ -141,6 +160,24 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(pv => pv.StudentProgrammes)
             .HasForeignKey(sp => sp.ProgrammeVersionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentCourse>()
+            .HasOne(sc => sc.Student)
+            .WithMany(u => u.StudentCourses)
+            .HasForeignKey(sc => sc.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentCourse>()
+            .HasOne(sc => sc.Course)
+            .WithMany(c => c.StudentCourses)
+            .HasForeignKey(sc => sc.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StudentCourse>()
+            .HasOne(sc => sc.Term)
+            .WithMany(t => t.StudentCourses)
+            .HasForeignKey(sc => sc.TermId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         List<IdentityRole> roles = new()
     {

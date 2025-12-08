@@ -7,14 +7,12 @@ public class CILOs
 {
     public required string code { get; set; }
     public string Description { get; set; } = string.Empty;
-    public object? meta { get; set; } // For future use
 }
 
 public class TLAs
 {
     public required string[] code { get; set; }
     public string Description { get; set; } = string.Empty;
-    public object? meta { get; set; } // For future use
 }
 
 [Table("course_versions")]
@@ -43,12 +41,36 @@ public class CourseVersion
     [Column("course_content")]
     public string CourseContent { get; set; } = string.Empty;
 
-    [Column("cilos", TypeName = "jsonb")]
-    public CILOs[] CILOs { get; set; } = Array.Empty<CILOs>();
+    [Column("version_number")]
+    public int VersionNumber { get; set; }
 
-    [Column("tlas", TypeName = "jsonb")]
-    public TLAs[] TLAs { get; set; } = Array.Empty<TLAs>();
+    [Column("cilos")]
+    public List<CILOs> CILOs { get; set; } = new();
 
+    [Column("tlas")]
+    public List<TLAs> TLAs { get; set; } = new();
+
+    // year = 2024 = 2024-2025 academic year
+    [Column("from_year")]
+    public int FromYear { get; set; }
+
+    [Column("from_term_id")]
+    public int FromTermId { get; set; }
+
+    [ForeignKey(nameof(FromTermId))]
+    public required Term FromTerm { get; set; }
+
+    [Column("to_year")]
+    public int? ToYear { get; set; } // null means ongoing/current
+
+    [Column("to_term_id")]
+    public int? ToTermId { get; set; } // null means ongoing/current
+
+    [ForeignKey(nameof(ToTermId))]
+    public Term? ToTerm { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<CourseVersionMedium> CourseVersionMediums { get; set; } = new List<CourseVersionMedium>();
     public ICollection<CourseSection> CourseSections { get; set; } = new List<CourseSection>();

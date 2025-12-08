@@ -12,4 +12,6 @@ public class User : IdentityUser
     [Column("name")]
     public string Name { get; set; } = string.Empty;
     public ICollection<StudentProgramme> StudentProgrammes { get; set; } = new List<StudentProgramme>();
+    public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
+
 }

@@ -14,4 +14,6 @@ public class Term
     [Column("name")]
     public string Name { get; set; } = string.Empty;
     public ICollection<CourseSection> CourseSections { get; set; } = new List<CourseSection>();
+    public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
+
 }

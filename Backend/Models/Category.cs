@@ -3,6 +3,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Models;
 
+public enum CategoryType
+{
+    Core,
+    Elective,
+    GE
+}
+
 [Table("categories")]
 public class Category
 {
@@ -25,6 +32,9 @@ public class Category
 
     [Column("priority")]
     public int Priority { get; set; } = 0;
+
+    [Column("type")]
+    public CategoryType Type { get; set; } = CategoryType.Core;
 
     // Navigation properties
     public ICollection<ProgrammeCategory> ProgrammeCategories { get; set; } = new List<ProgrammeCategory>();

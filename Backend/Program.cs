@@ -4,6 +4,7 @@ using Backend.Models;
 using Backend.Services.AI;
 using Backend.Services.Auth;
 using Backend.Services.Courses;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 
 builder.Services.AddDbContextPool<AppDbContext>(opt =>
 {
@@ -30,7 +43,16 @@ builder.Services.AddIdentity<User, IdentityRole>(opt =>
     opt.Password.RequiredLength = 4;
 }).AddEntityFrameworkStores<AppDbContext>();
 
-builder.Services.AddAuthentication().AddJwtBearer(opt =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme =
+    options.DefaultChallengeScheme =
+    options.DefaultForbidScheme =
+    options.DefaultScheme =
+    options.DefaultSignInScheme =
+    options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
+}
+).AddJwtBearer(opt =>
 {
     opt.TokenValidationParameters = new TokenValidationParameters
     {
@@ -38,7 +60,20 @@ builder.Services.AddAuthentication().AddJwtBearer(opt =>
         ValidAudience = builder.Configuration["JWT:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"]!))
     };
+
+    opt.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.ContainsKey("fypToken"))
+            {
+                context.Token = context.Request.Cookies["fypToken"];
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
+
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -81,8 +116,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

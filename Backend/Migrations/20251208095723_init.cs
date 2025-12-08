@@ -5,6 +5,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Backend.Migrations
 {
     /// <inheritdoc />
@@ -63,7 +65,8 @@ namespace Backend.Migrations
                     rules = table.Column<RuleNode>(type: "jsonb", nullable: true),
                     notes = table.Column<string>(type: "text", nullable: false),
                     min_credit = table.Column<int>(type: "integer", nullable: false),
-                    priority = table.Column<int>(type: "integer", nullable: false)
+                    priority = table.Column<int>(type: "integer", nullable: false),
+                    type = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -111,12 +114,26 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "medium_of_instructions",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_medium_of_instructions", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "programmes",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    name = table.Column<string>(type: "text", nullable: false)
+                    name = table.Column<string>(type: "text", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -250,8 +267,10 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "text", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: true),
                     code_id = table.Column<int>(type: "integer", nullable: false),
-                    course_number = table.Column<string>(type: "text", nullable: false)
+                    course_number = table.Column<string>(type: "text", nullable: false),
+                    credit = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -296,7 +315,11 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     programme_id = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    last_edited_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    last_edited_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    version_number = table.Column<int>(type: "integer", nullable: false),
+                    start_year = table.Column<int>(type: "integer", nullable: false),
+                    end_year = table.Column<int>(type: "integer", nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -341,7 +364,17 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     course_id = table.Column<int>(type: "integer", nullable: false),
                     credit = table.Column<int>(type: "integer", nullable: false),
-                    description = table.Column<string>(type: "text", nullable: false)
+                    description = table.Column<string>(type: "text", nullable: false),
+                    aim_and_objectives = table.Column<string>(type: "text", nullable: false),
+                    course_content = table.Column<string>(type: "text", nullable: false),
+                    version_number = table.Column<int>(type: "integer", nullable: false),
+                    from_year = table.Column<int>(type: "integer", nullable: false),
+                    from_term_id = table.Column<int>(type: "integer", nullable: false),
+                    to_year = table.Column<int>(type: "integer", nullable: true),
+                    to_term_id = table.Column<int>(type: "integer", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CILOs = table.Column<string>(type: "jsonb", nullable: false),
+                    TLAs = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -352,6 +385,18 @@ namespace Backend.Migrations
                         principalTable: "courses",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_course_versions_terms_from_term_id",
+                        column: x => x.from_term_id,
+                        principalTable: "terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_course_versions_terms_to_term_id",
+                        column: x => x.to_term_id,
+                        principalTable: "terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -385,6 +430,40 @@ namespace Backend.Migrations
                         principalTable: "courses",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "student_courses",
+                columns: table => new
+                {
+                    student_id = table.Column<string>(type: "text", nullable: false),
+                    course_id = table.Column<int>(type: "integer", nullable: false),
+                    term_id = table.Column<int>(type: "integer", nullable: false),
+                    academic_year = table.Column<int>(type: "integer", nullable: false),
+                    grade = table.Column<string>(type: "text", nullable: true),
+                    notes = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_student_courses", x => new { x.student_id, x.course_id });
+                    table.ForeignKey(
+                        name: "FK_student_courses_AspNetUsers_student_id",
+                        column: x => x.student_id,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_student_courses_courses_course_id",
+                        column: x => x.course_id,
+                        principalTable: "courses",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_student_courses_terms_term_id",
+                        column: x => x.term_id,
+                        principalTable: "terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -460,6 +539,29 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "course_assessments",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    course_version_id = table.Column<int>(type: "integer", nullable: false),
+                    name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    weighting = table.Column<decimal>(type: "numeric", nullable: false),
+                    category = table.Column<int>(type: "integer", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_course_assessments", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_course_assessments_course_versions_course_version_id",
+                        column: x => x.course_version_id,
+                        principalTable: "course_versions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "course_pre_reqs",
                 columns: table => new
                 {
@@ -491,7 +593,8 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     course_version_id = table.Column<int>(type: "integer", nullable: false),
                     year = table.Column<int>(type: "integer", nullable: false),
-                    term_id = table.Column<int>(type: "integer", nullable: false)
+                    term_id = table.Column<int>(type: "integer", nullable: false),
+                    section_number = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -506,6 +609,32 @@ namespace Backend.Migrations
                         name: "FK_course_sections_terms_term_id",
                         column: x => x.term_id,
                         principalTable: "terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "course_version_mediums",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    course_version_id = table.Column<int>(type: "integer", nullable: false),
+                    medium_of_instruction_id = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_course_version_mediums", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_course_version_mediums_course_versions_course_version_id",
+                        column: x => x.course_version_id,
+                        principalTable: "course_versions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_course_version_mediums_medium_of_instructions_medium_of_ins~",
+                        column: x => x.medium_of_instruction_id,
+                        principalTable: "medium_of_instructions",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -531,6 +660,15 @@ namespace Backend.Migrations
                         principalTable: "course_sections",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "AspNetRoles",
+                columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
+                values: new object[,]
+                {
+                    { "08fb9bd6-eeda-4063-9be8-ffadd4a09a39", "4e544a59-030f-4446-86ef-8ded2fa0aebf", "Admin", "ADMIN" },
+                    { "f54b9699-348d-45b3-8fbb-83d5591b2aef", "5bf897a4-3ddd-41f3-8f8a-5526f3b008dd", "Student", "STUDENT" }
                 });
 
             migrationBuilder.CreateIndex(
@@ -581,6 +719,11 @@ namespace Backend.Migrations
                 column: "excluded_course_version_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_course_assessments_course_version_id",
+                table: "course_assessments",
+                column: "course_version_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_course_departments_department_id",
                 table: "course_departments",
                 column: "department_id");
@@ -606,9 +749,29 @@ namespace Backend.Migrations
                 column: "term_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_course_version_mediums_course_version_id",
+                table: "course_version_mediums",
+                column: "course_version_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_course_version_mediums_medium_of_instruction_id",
+                table: "course_version_mediums",
+                column: "medium_of_instruction_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_course_versions_course_id",
                 table: "course_versions",
                 column: "course_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_course_versions_from_term_id",
+                table: "course_versions",
+                column: "from_term_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_course_versions_to_term_id",
+                table: "course_versions",
+                column: "to_term_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_courses_code_id",
@@ -641,6 +804,16 @@ namespace Backend.Migrations
                 column: "programme_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_student_courses_course_id",
+                table: "student_courses",
+                column: "course_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_student_courses_term_id",
+                table: "student_courses",
+                column: "term_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_student_programmes_programme_version_id",
                 table: "student_programmes",
                 column: "programme_version_id");
@@ -671,6 +844,9 @@ namespace Backend.Migrations
                 name: "course_anti_reqs");
 
             migrationBuilder.DropTable(
+                name: "course_assessments");
+
+            migrationBuilder.DropTable(
                 name: "course_departments");
 
             migrationBuilder.DropTable(
@@ -680,10 +856,16 @@ namespace Backend.Migrations
                 name: "course_pre_reqs");
 
             migrationBuilder.DropTable(
+                name: "course_version_mediums");
+
+            migrationBuilder.DropTable(
                 name: "group_courses");
 
             migrationBuilder.DropTable(
                 name: "programme_categories");
+
+            migrationBuilder.DropTable(
+                name: "student_courses");
 
             migrationBuilder.DropTable(
                 name: "student_programmes");
@@ -696,6 +878,9 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "course_sections");
+
+            migrationBuilder.DropTable(
+                name: "medium_of_instructions");
 
             migrationBuilder.DropTable(
                 name: "course_groups");
@@ -713,13 +898,13 @@ namespace Backend.Migrations
                 name: "course_versions");
 
             migrationBuilder.DropTable(
-                name: "terms");
-
-            migrationBuilder.DropTable(
                 name: "programmes");
 
             migrationBuilder.DropTable(
                 name: "courses");
+
+            migrationBuilder.DropTable(
+                name: "terms");
 
             migrationBuilder.DropTable(
                 name: "codes");
