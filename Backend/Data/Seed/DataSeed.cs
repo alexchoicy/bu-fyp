@@ -52,7 +52,7 @@ public class DataSeed
 
         var departments = new List<Department>
         {
-            new() { Name = "Department of Computing" },
+            new() { Name = "Department of Computer Science" },
             new() { Name = "Department of Mathematics" },
             new() { Name = "Department of English" },
             new() { Name = "Department of History" }

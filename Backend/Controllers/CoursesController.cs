@@ -18,6 +18,62 @@ namespace Backend.Controllers
             _courseService = courseService;
         }
 
+        [HttpGet]
+        [ProducesResponseType(typeof(List<CourseResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetCourses()
+        {
+            try
+            {
+                var courses = await _courseService.GetCoursesAsync();
+                return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving courses");
+                return StatusCode(500, new { message = "Error retrieving courses" });
+            }
+        }
+
+        [HttpGet("simple")]
+        [ProducesResponseType(typeof(List<SimpleCourseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetSimpleCourses()
+        {
+            try
+            {
+                var courses = await _courseService.GetSimpleCoursesAsync();
+                return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving simple courses");
+                return StatusCode(500, new { message = "Error retrieving simple courses" });
+            }
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(CourseResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetCourseById(int id)
+        {
+            try
+            {
+                var course = await _courseService.GetCourseByIdAsync(id);
+                if (course == null)
+                {
+                    return NotFound(new { message = $"Course with ID {id} not found" });
+                }
+                return Ok(course);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving course with ID {CourseId}", id);
+                return StatusCode(500, new { message = "Error retrieving course" });
+            }
+        }
+
         [HttpPost("create/parsePDF")]
         [ProducesResponseType(typeof(PdfParseResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -50,6 +106,59 @@ namespace Backend.Controllers
             {
                 _logger.LogError(ex, "Error processing PDF parse");
                 return StatusCode(500, new { message = "Error processing PDF file" });
+            }
+        }
+
+        [HttpPost]
+        [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateCourse([FromBody] CreateCourseDto createCourseDto)
+        {
+            try
+            {
+                var courseId = await _courseService.CreateCourseAsync(createCourseDto);
+                return Created($"/api/courses/{courseId}", new { id = courseId });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid argument when creating course");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Invalid operation when creating course");
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating course");
+                return StatusCode(500, new { message = "Error creating course" });
+            }
+        }
+
+        [HttpPost("{id}/versions")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateCourseVersion(int id, [FromBody] CreateCourseVersionDto createVersionDto)
+        {
+            try
+            {
+                var versionId = await _courseService.CreateCourseVersionAsync(id, createVersionDto);
+                return Created($"/api/courses/{id}/versions/{versionId}", new { id = versionId });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid argument when creating course version");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating course version");
+                return StatusCode(500, new { message = "Error creating course version" });
             }
         }
     }

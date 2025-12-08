@@ -1,8 +1,11 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Backend.Data;
 using Backend.Dtos.Courses;
+using Backend.Dtos.Facts;
 using Backend.Models;
 using Backend.Services.AI;
+using Microsoft.EntityFrameworkCore;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.DocumentLayoutAnalysis;
@@ -13,7 +16,12 @@ namespace Backend.Services.Courses;
 
 public interface ICourseService
 {
+    Task<List<CourseResponseDto>> GetCoursesAsync();
+    Task<CourseResponseDto?> GetCourseByIdAsync(int id);
+    Task<List<SimpleCourseDto>> GetSimpleCoursesAsync();
     Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null);
+    Task<int> CreateCourseAsync(CreateCourseDto createCourseDto);
+    Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto);
 }
 
 
@@ -21,6 +29,8 @@ public class CourseService : ICourseService
 {
     private readonly ILogger<CourseService> _logger;
     private readonly IAIProviderFactory _aiProviderFactory;
+    private readonly AppDbContext _context;
+
     private readonly Dictionary<string, string> sectionPatterns = new Dictionary<string, string>
         {
             { "COURSE_TITLE", @"1\.\s*COURSE TITLE[:\s]*(.+?)(?=2\.\s*COURSE CODE|$)" },
@@ -35,10 +45,216 @@ public class CourseService : ICourseService
             { "TLAS", @"10\.\s*TEACHING\s*[&AND]*\s*LEARNING ACTIVITIES\s*\(?TLAs?\)?[:\s]*(.+?)(?=11\.\s*ASSESSMENT METHODS|$)" },
             { "ASSESSMENT_METHODS", @"11\.\s*ASSESSMENT METHODS\s*\(?AMs?\)?[:\s]*(.+?)$" }
         };
-    public CourseService(ILogger<CourseService> logger, IAIProviderFactory aiProviderFactory)
+
+    private static readonly Regex courseCodeExtract = new Regex(@"([A-Za-z]{4})(\d{4})");
+
+    public CourseService(ILogger<CourseService> logger, AppDbContext context, IAIProviderFactory aiProviderFactory)
     {
         _logger = logger;
+        _context = context;
         _aiProviderFactory = aiProviderFactory;
+    }
+
+    private CourseResponseDto MapCourseToResponseDto(Course course)
+    {
+        return new CourseResponseDto
+        {
+            Id = course.Id,
+            Name = course.Name,
+            CourseNumber = course.CourseNumber,
+            CodeId = course.CodeId,
+            CodeTag = course.Code.Tag,
+            Credit = course.Credit,
+            IsActive = course.IsActive,
+            Description = course.Description,
+            Departments = course.CourseDepartments
+                .Select(cd => cd.Department.Name)
+                .ToList(),
+            Versions = course.CourseVersions
+                .OrderByDescending(cv => cv.VersionNumber)
+                .Select(cv => new CourseVersionResponseDto
+                {
+                    Id = cv.Id,
+                    Description = cv.Description,
+                    AimAndObjectives = cv.AimAndObjectives,
+                    CourseContent = cv.CourseContent,
+                    CILOs = cv.CILOs,
+                    TLAs = cv.TLAs,
+                    VersionNumber = cv.VersionNumber,
+                    CreatedAt = cv.CreatedAt,
+                    FromYear = cv.FromYear,
+                    FromTerm = new TermResponseDto
+                    {
+                        Id = cv.FromTerm.Id,
+                        Name = cv.FromTerm.Name
+                    },
+                    ToYear = cv.ToYear,
+                    ToTerm = cv.ToTerm != null ? new TermResponseDto
+                    {
+                        Id = cv.ToTerm.Id,
+                        Name = cv.ToTerm.Name
+                    } : null,
+                    MediumOfInstruction = cv.CourseVersionMediums
+                        .Select(cvm => cvm.MediumOfInstruction.Name)
+                        .ToList(),
+                    Assessments = cv.Assessments
+                        .Select(a => new AssessmentResponseDto
+                        {
+                            Id = a.Id,
+                            Name = a.Name,
+                            Weighting = a.Weighting,
+                            Category = a.Category.ToString(),
+                            Description = a.Description
+                        })
+                        .ToList()
+                })
+                .ToList()
+        };
+    }
+    public async Task<List<CourseResponseDto>> GetCoursesAsync()
+    {
+        var courses = await _context.Courses
+            .Include(c => c.Code)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.Assessments)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.FromTerm)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.ToTerm)
+            .Include(c => c.CourseDepartments)
+                .ThenInclude(cd => cd.Department)
+            .ToListAsync();
+
+        return courses.Select(c => MapCourseToResponseDto(c)).ToList();
+    }
+
+    public async Task<CourseResponseDto?> GetCourseByIdAsync(int id)
+    {
+        var course = await _context.Courses
+            .Include(c => c.Code)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.Assessments)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.FromTerm)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.ToTerm)
+            .Include(c => c.CourseDepartments)
+                .ThenInclude(cd => cd.Department)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        return course != null ? MapCourseToResponseDto(course) : null;
+    }
+
+    public async Task<List<SimpleCourseDto>> GetSimpleCoursesAsync()
+    {
+        var courses = await _context.Courses
+            .Include(c => c.Code)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.Assessments)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.FromTerm)
+            .Include(c => c.CourseVersions)
+                .ThenInclude(cv => cv.ToTerm)
+            .ToListAsync();
+
+        return courses.Select(c => new SimpleCourseDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            CourseNumber = c.CourseNumber,
+            CodeId = c.CodeId,
+            CodeTag = c.Code.Tag,
+            MostRecentVersion = c.CourseVersions
+                .OrderByDescending(cv => cv.VersionNumber)
+                .Select(cv => new CourseVersionResponseDto
+                {
+                    Id = cv.Id,
+                    Description = cv.Description,
+                    AimAndObjectives = cv.AimAndObjectives,
+                    CourseContent = cv.CourseContent,
+                    CILOs = cv.CILOs,
+                    TLAs = cv.TLAs,
+                    VersionNumber = cv.VersionNumber,
+                    CreatedAt = cv.CreatedAt,
+                    FromYear = cv.FromYear,
+                    FromTerm = new TermResponseDto
+                    {
+                        Id = cv.FromTerm.Id,
+                        Name = cv.FromTerm.Name
+                    },
+                    ToYear = cv.ToYear,
+                    ToTerm = cv.ToTerm != null ? new TermResponseDto
+                    {
+                        Id = cv.ToTerm.Id,
+                        Name = cv.ToTerm.Name
+                    } : null,
+                    MediumOfInstruction = cv.CourseVersionMediums
+                        .Select(cvm => cvm.MediumOfInstruction.Name)
+                        .ToList(),
+                    Assessments = cv.Assessments
+                        .Select(a => new AssessmentResponseDto
+                        {
+                            Id = a.Id,
+                            Name = a.Name,
+                            Weighting = a.Weighting,
+                            Category = a.Category.ToString(),
+                            Description = a.Description
+                        })
+                        .ToList()
+                })
+                .FirstOrDefault()
+        }).ToList();
+    }
+
+
+    private (string, string) ExtractCourseCodeAndNumber(string courseCodeRaw)
+    {
+        Match match = courseCodeExtract.Match(courseCodeRaw);
+        if (match.Success && match.Groups.Count == 3)
+        {
+            return (match.Groups[1].Value.ToUpper(), match.Groups[2].Value);
+        }
+        return (string.Empty, string.Empty);
+    }
+
+    private List<CourseCodeDto> ExtractMultipleCourses(string prerequisitesText)
+    {
+        var courses = new List<CourseCodeDto>();
+
+        if (string.IsNullOrWhiteSpace(prerequisitesText))
+        {
+            return courses;
+        }
+
+        string[] lines = prerequisitesText.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string line in lines)
+        {
+            string trimmedLine = line.Trim();
+            if (!string.IsNullOrWhiteSpace(trimmedLine))
+            {
+                (string courseCode, string courseNumber) = ExtractCourseCodeAndNumber(trimmedLine);
+                if (!string.IsNullOrEmpty(courseCode) && !string.IsNullOrEmpty(courseNumber))
+                {
+                    courses.Add(new CourseCodeDto
+                    {
+                        CourseCode = courseCode,
+                        CourseCodeNumber = courseNumber
+                    });
+                }
+            }
+        }
+
+        return courses;
     }
 
     private ParsedSectionsDto ParseCourseContent(string fullText)
@@ -58,13 +274,18 @@ public class CourseService : ICourseService
             }
         }
 
+        (string courseCode, string courseNumber) = ExtractCourseCodeAndNumber(sections["COURSE_CODE"]);
+
+
+
         return new ParsedSectionsDto
         {
             CourseTitle = sections["COURSE_TITLE"],
-            CourseCode = sections["COURSE_CODE"],
+            CourseCode = courseCode,
+            CourseCodeNumber = courseNumber,
             NoOfUnits = sections["NO_OF_UNITS"],
             OfferingDepartment = sections["OFFERING_DEPARTMENT"],
-            Prerequisites = sections["PREREQUISITES"],
+            Prerequisites = ExtractMultipleCourses(sections["PREREQUISITES"]),
             MediumOfInstruction = sections["MEDIUM_OF_INSTRUCTION"],
             AimsObjectives = sections["AIMS_OBJECTIVES"],
             CourseContent = sections["COURSE_CONTENT"],
@@ -131,5 +352,239 @@ public class CourseService : ICourseService
         parsedCourseData.CILOs = await cilosTask;
         parsedCourseData.AssessmentMethods = await assessmentTask;
         parsedCourseData.TLAs = await tlasTask;
+    }
+
+    public async Task<int> CreateCourseAsync(CreateCourseDto createCourseDto)
+    {
+        var code = await _context.Codes.FindAsync(createCourseDto.CodeId);
+        if (code == null)
+        {
+            throw new ArgumentException($"Code with ID {createCourseDto.CodeId} not found");
+        }
+
+        Course? existingCourse = await _context.Courses
+            .FirstOrDefaultAsync(c => c.CodeId == createCourseDto.CodeId && c.CourseNumber == createCourseDto.CourseNumber);
+        if (existingCourse != null)
+        {
+            throw new InvalidOperationException($"Course with code {code.Tag} and number {createCourseDto.CourseNumber} already exists");
+        }
+
+        Course course = new Course
+        {
+            Name = createCourseDto.Name,
+            CourseNumber = createCourseDto.CourseNumber,
+            CodeId = createCourseDto.CodeId,
+            Credit = createCourseDto.Credit,
+            Description = createCourseDto.Description,
+            IsActive = createCourseDto.IsActive
+        };
+
+        _context.Courses.Add(course);
+
+        if (createCourseDto.DepartmentIds != null && createCourseDto.DepartmentIds.Count > 0)
+        {
+            var distinctDeptIds = createCourseDto.DepartmentIds.Distinct().ToList();
+
+            var existingDeptIds = await _context.Departments
+                .Where(d => distinctDeptIds.Contains(d.Id))
+                .Select(d => d.Id)
+                .ToListAsync();
+
+            var missingDepts = distinctDeptIds.Except(existingDeptIds).ToList();
+            if (missingDepts.Any())
+            {
+                throw new ArgumentException($"Department(s) with ID(s) {string.Join(',', missingDepts)} not found");
+            }
+
+            foreach (var deptId in distinctDeptIds)
+            {
+                var courseDepartment = new CourseDepartment
+                {
+                    Course = course,
+                    DepartmentId = deptId
+                };
+                _context.CourseDepartments.Add(courseDepartment);
+            }
+
+        }
+
+        if (createCourseDto.GroupIds != null && createCourseDto.GroupIds.Count > 0)
+        {
+            var distinctIds = createCourseDto.GroupIds.Distinct().ToList();
+
+            var existingGroupIds = await _context.CourseGroups
+                .Where(g => distinctIds.Contains(g.Id))
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            var missing = distinctIds.Except(existingGroupIds).ToList();
+            if (missing.Any())
+            {
+                throw new ArgumentException($"Course group(s) with ID(s) {string.Join(',', missing)} not found");
+            }
+
+            foreach (var gid in distinctIds)
+            {
+                var groupCourse = new GroupCourse
+                {
+                    GroupId = gid,
+                    Course = course,
+                    CodeId = createCourseDto.CodeId
+                };
+                _context.GroupCourses.Add(groupCourse);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return course.Id;
+    }
+
+    public async Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto)
+    {
+        Course? course = await _context.Courses
+            .Include(c => c.CourseVersions)
+            .FirstOrDefaultAsync(c => c.Id == courseId);
+
+        if (course == null)
+        {
+            throw new ArgumentException($"Course with ID {courseId} not found");
+        }
+
+        Term? fromTerm = await _context.Terms.FindAsync(createVersionDto.FromTermId);
+        if (fromTerm == null)
+        {
+            throw new ArgumentException($"Term with ID {createVersionDto.FromTermId} not found");
+        }
+
+        if (createVersionDto.ToTermId.HasValue)
+        {
+            var toTerm = await _context.Terms.FindAsync(createVersionDto.ToTermId.Value);
+            if (toTerm == null)
+            {
+                throw new ArgumentException($"Term with ID {createVersionDto.ToTermId.Value} not found");
+            }
+        }
+
+        int nextVersionNumber = course.CourseVersions.Any()
+            ? course.CourseVersions.Max(cv => cv.VersionNumber) + 1
+            : 1;
+
+        CourseVersion courseVersion = new CourseVersion
+        {
+            CourseId = courseId,
+            Description = createVersionDto.Description,
+            AimAndObjectives = createVersionDto.AimAndObjectives,
+            CourseContent = createVersionDto.CourseContent,
+            CILOs = createVersionDto.CILOs,
+            TLAs = createVersionDto.TLAs,
+            VersionNumber = nextVersionNumber,
+            FromYear = createVersionDto.FromYear,
+            FromTermId = createVersionDto.FromTermId,
+            ToYear = createVersionDto.ToYear,
+            ToTermId = createVersionDto.ToTermId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.CourseVersions.Add(courseVersion);
+
+        if (createVersionDto.MediumOfInstructionIds != null && createVersionDto.MediumOfInstructionIds.Count > 0)
+        {
+            List<int> mediumIds = createVersionDto.MediumOfInstructionIds;
+
+            List<int> existingMediumIds = await _context.MediumOfInstructions
+               .Where(m => mediumIds.Contains(m.Id))
+               .Select(m => m.Id)
+               .ToListAsync();
+
+            List<int> missingMediums = mediumIds.Except(existingMediumIds).ToList();
+            if (missingMediums.Any())
+            {
+                throw new ArgumentException($"Medium of instruction(s) with ID(s) {string.Join(',', missingMediums)} not found");
+            }
+
+            foreach (var mediumId in mediumIds)
+            {
+                var courseVersionMedium = new CourseVersionMedium
+                {
+                    CourseVersion = courseVersion,
+                    MediumOfInstructionId = mediumId
+                };
+                _context.CourseVersionMediums.Add(courseVersionMedium);
+            }
+        }
+
+        if (createVersionDto.Assessments != null && createVersionDto.Assessments.Count > 0)
+        {
+            foreach (var assessmentDto in createVersionDto.Assessments)
+            {
+                CourseAssessment assessment = new CourseAssessment
+                {
+                    CourseVersion = courseVersion,
+                    Name = assessmentDto.Name,
+                    Weighting = assessmentDto.Weighting,
+                    Category = assessmentDto.Category,
+                    Description = assessmentDto.Description
+                };
+                _context.CourseAssessments.Add(assessment);
+            }
+        }
+
+
+        if (createVersionDto.PreRequisiteCourseVersionIds != null && createVersionDto.PreRequisiteCourseVersionIds.Count > 0)
+        {
+            List<int> distinctPreReqIds = createVersionDto.PreRequisiteCourseVersionIds.Distinct().ToList();
+
+            List<int> existingPreReqIds = await _context.CourseVersions
+                .Where(cv => distinctPreReqIds.Contains(cv.Id))
+                .Select(cv => cv.Id)
+                .ToListAsync();
+
+            List<int> missingPreReqs = distinctPreReqIds.Except(existingPreReqIds).ToList();
+            if (missingPreReqs.Any())
+            {
+                throw new ArgumentException($"Course version(s) with ID(s) {string.Join(',', missingPreReqs)} not found for prerequisites");
+            }
+
+            foreach (int preReqId in distinctPreReqIds)
+            {
+                CoursePreReq coursePreReq = new CoursePreReq
+                {
+                    CourseVersion = courseVersion,
+                    RequiredCourseVersionId = preReqId
+                };
+                _context.CoursePreReqs.Add(coursePreReq);
+            }
+        }
+
+        if (createVersionDto.AntiRequisiteCourseVersionIds != null && createVersionDto.AntiRequisiteCourseVersionIds.Count > 0)
+        {
+            List<int> distinctAntiReqIds = createVersionDto.AntiRequisiteCourseVersionIds.Distinct().ToList();
+
+            List<int> existingAntiReqIds = await _context.CourseVersions
+                .Where(cv => distinctAntiReqIds.Contains(cv.Id))
+                .Select(cv => cv.Id)
+                .ToListAsync();
+
+            List<int> missingAntiReqs = distinctAntiReqIds.Except(existingAntiReqIds).ToList();
+            if (missingAntiReqs.Any())
+            {
+                throw new ArgumentException($"Course version(s) with ID(s) {string.Join(',', missingAntiReqs)} not found for anti-requisites");
+            }
+
+            foreach (int antiReqId in distinctAntiReqIds)
+            {
+                CourseAntiReq courseAntiReq = new CourseAntiReq
+                {
+                    CourseVersion = courseVersion,
+                    ExcludedCourseVersionId = antiReqId
+                };
+                _context.CourseAntiReqs.Add(courseAntiReq);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return courseVersion.Id;
+
     }
 }

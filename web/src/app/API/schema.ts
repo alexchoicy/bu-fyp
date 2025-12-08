@@ -4,242 +4,821 @@
  */
 
 export interface paths {
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["LoginRequestDto"];
-                    "text/json": components["schemas"]["LoginRequestDto"];
-                    "application/*+json": components["schemas"]["LoginRequestDto"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/api/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["LoginRequestDto"];
+          "text/json": components["schemas"]["LoginRequestDto"];
+          "application/*+json": components["schemas"]["LoginRequestDto"];
         };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["AuthResponseDto"];
-                        "application/json": components["schemas"]["AuthResponseDto"];
-                        "text/json": components["schemas"]["AuthResponseDto"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["AuthResponseDto"];
+            "application/json": components["schemas"]["AuthResponseDto"];
+            "text/json": components["schemas"]["AuthResponseDto"];
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Unauthorized */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+      };
     };
-    "/api/courses/create/parsePDF": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: {
-                    aiProvider?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "multipart/form-data": {
-                        file?: components["schemas"]["IFormFile"];
-                    };
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["PdfParseResponseDto"];
-                        "application/json": components["schemas"]["PdfParseResponseDto"];
-                        "text/json": components["schemas"]["PdfParseResponseDto"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["AuthResponseDto"];
+            "application/json": components["schemas"]["AuthResponseDto"];
+            "text/json": components["schemas"]["AuthResponseDto"];
+          };
+        };
+        /** @description Unauthorized */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/courses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["CourseResponseDto"][];
+            "application/json": components["schemas"]["CourseResponseDto"][];
+            "text/json": components["schemas"]["CourseResponseDto"][];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateCourseDto"];
+          "text/json": components["schemas"]["CreateCourseDto"];
+          "application/*+json": components["schemas"]["CreateCourseDto"];
+        };
+      };
+      responses: {
+        /** @description Created */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": unknown;
+            "application/json": unknown;
+            "text/json": unknown;
+          };
+        };
+        /** @description Bad Request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Conflict */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/courses/simple": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["SimpleCourseDto"][];
+            "application/json": components["schemas"]["SimpleCourseDto"][];
+            "text/json": components["schemas"]["SimpleCourseDto"][];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/courses/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: number | string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["CourseResponseDto"];
+            "application/json": components["schemas"]["CourseResponseDto"];
+            "text/json": components["schemas"]["CourseResponseDto"];
+          };
+        };
+        /** @description Not Found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/courses/create/parsePDF": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: {
+          aiProvider?: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          "multipart/form-data": {
+            file?: components["schemas"]["IFormFile"];
+          };
+        };
+      };
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["PdfParseResponseDto"];
+            "application/json": components["schemas"]["PdfParseResponseDto"];
+            "text/json": components["schemas"]["PdfParseResponseDto"];
+          };
+        };
+        /** @description Bad Request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/courses/{id}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          id: number | string;
+        };
+        cookie?: never;
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateCourseVersionDto"];
+          "text/json": components["schemas"]["CreateCourseVersionDto"];
+          "application/*+json": components["schemas"]["CreateCourseVersionDto"];
+        };
+      };
+      responses: {
+        /** @description Created */
+        201: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": unknown;
+            "application/json": unknown;
+            "text/json": unknown;
+          };
+        };
+        /** @description Bad Request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Not Found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["ProblemDetails"];
+            "application/json": components["schemas"]["ProblemDetails"];
+            "text/json": components["schemas"]["ProblemDetails"];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/facts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["CurrentFactsResponseDto"];
+            "application/json": components["schemas"]["CurrentFactsResponseDto"];
+            "text/json": components["schemas"]["CurrentFactsResponseDto"];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/facts/codes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["CodeResponseDto"][];
+            "application/json": components["schemas"]["CodeResponseDto"][];
+            "text/json": components["schemas"]["CodeResponseDto"][];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/facts/groups": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["CourseGroupResponseDto"][];
+            "application/json": components["schemas"]["CourseGroupResponseDto"][];
+            "text/json": components["schemas"]["CourseGroupResponseDto"][];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/facts/departments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "text/plain": components["schemas"]["DepartmentResponseDto"][];
+            "application/json": components["schemas"]["DepartmentResponseDto"][];
+            "text/json": components["schemas"]["DepartmentResponseDto"][];
+          };
+        };
+        /** @description Internal Server Error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content?: never;
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        AssessmentCategory: number;
-        AssessmentMethod: {
-            name: string;
-            /** Format: double */
-            weighting?: number | string;
-            category?: components["schemas"]["AssessmentCategory"];
-            description?: string;
-        };
-        AuthResponseDto: {
-            roles: string[];
-            name: string;
-            id: string;
-        };
-        CILOs: {
-            code: string;
-            description?: string;
-        };
-        /** Format: binary */
-        IFormFile: string;
-        LoginRequestDto: {
-            username: string;
-            password: string;
-        };
-        ParsedSectionsDto: {
-            courseTitle?: string;
-            courseCode?: string;
-            noOfUnits?: string;
-            offeringDepartment?: string;
-            prerequisites?: string;
-            mediumOfInstruction?: string;
-            aimsObjectives?: string;
-            courseContent?: string;
-            cilosRaw?: string;
-            cilOs?: components["schemas"]["CILOs"][];
-            tlasRaw?: string;
-            tlAs?: components["schemas"]["TLAs"][];
-            assessmentMethodsRaw?: string;
-            assessmentMethods?: components["schemas"]["AssessmentMethod"][];
-        };
-        PdfParseResponseDto: {
-            message?: string;
-            filename?: string;
-            /** Format: int64 */
-            size?: number | string;
-            /** Format: int32 */
-            pages?: number | string;
-            extractedText?: string;
-            parsedSections?: components["schemas"]["ParsedSectionsDto"];
-        };
-        ProblemDetails: {
-            type?: null | string;
-            title?: null | string;
-            /** Format: int32 */
-            status?: null | number | string;
-            detail?: null | string;
-            instance?: null | string;
-        };
-        TLAs: {
-            code: string[];
-            description?: string;
-        };
+  schemas: {
+    AssessmentCategory: number;
+    AssessmentMethod: {
+      name: string;
+      /** Format: double */
+      weighting?: number | string;
+      category?: components["schemas"]["AssessmentCategory"];
+      description?: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    AssessmentResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+      /** Format: double */
+      weighting?: number | string;
+      category?: string;
+      description?: string;
+    };
+    AuthResponseDto: {
+      roles: string[];
+      name: string;
+      id: string;
+    };
+    CILOs: {
+      code: string;
+      description?: string;
+    };
+    CodeResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      tag?: string;
+      name?: string;
+    };
+    CourseCodeDto: {
+      courseCode?: string;
+      courseCodeNumber?: string;
+    };
+    CourseGroupResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+    };
+    CourseResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+      courseNumber?: string;
+      /** Format: int32 */
+      codeId?: number | string;
+      codeTag?: string;
+      /** Format: int32 */
+      credit?: number | string;
+      description?: null | string;
+      isActive?: boolean;
+      versions?: components["schemas"]["CourseVersionResponseDto"][];
+      departments?: string[];
+    };
+    CourseVersionResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      description?: string;
+      aimAndObjectives?: string;
+      courseContent?: string;
+      cilOs?: components["schemas"]["CILOs"][];
+      tlAs?: components["schemas"]["TLAs"][];
+      /** Format: int32 */
+      versionNumber?: number | string;
+      /** Format: date-time */
+      createdAt?: string;
+      /** Format: int32 */
+      fromYear?: number | string;
+      fromTerm?: components["schemas"]["TermResponseDto"];
+      /** Format: int32 */
+      toYear?: null | number | string;
+      toTerm?: null | components["schemas"]["TermResponseDto"];
+      assessments?: components["schemas"]["AssessmentResponseDto"][];
+      mediumOfInstruction?: string[];
+    };
+    CreateAssessmentDto: {
+      name: string;
+      /** Format: double */
+      weighting?: number | string;
+      category?: components["schemas"]["AssessmentCategory"];
+      description?: string;
+    };
+    CreateCourseDto: {
+      name: string;
+      courseNumber: string;
+      /** Format: int32 */
+      codeId: number | string;
+      /** Format: int32 */
+      credit?: number | string;
+      description?: null | string;
+      groupIds?: number[];
+      departmentIds?: (number | string)[];
+      isActive?: boolean;
+    };
+    CreateCourseVersionDto: {
+      description?: string;
+      aimAndObjectives?: string;
+      courseContent?: string;
+      cilOs?: components["schemas"]["CILOs"][];
+      tlAs?: components["schemas"]["TLAs"][];
+      assessments?: components["schemas"]["CreateAssessmentDto"][];
+      mediumOfInstructionIds?: number[];
+      preRequisiteCourseVersionIds?: number[];
+      antiRequisiteCourseVersionIds?: number[];
+      /** Format: int32 */
+      fromYear: number | string;
+      /** Format: int32 */
+      fromTermId: number | string;
+      /** Format: int32 */
+      toYear?: null | number | string;
+      /** Format: int32 */
+      toTermId?: null | number | string;
+    };
+    CurrentFactsResponseDto: {
+      /** Format: int32 */
+      currentSemester?: number | string;
+      /** Format: int32 */
+      currentAcademicYear?: number | string;
+      currentTermName?: null | string;
+    };
+    DepartmentResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+    };
+    /** Format: binary */
+    IFormFile: string;
+    LoginRequestDto: {
+      username: string;
+      password: string;
+    };
+    ParsedSectionsDto: {
+      courseTitle?: string;
+      courseCodeNumber?: string;
+      courseCode?: string;
+      noOfUnits?: string;
+      offeringDepartment?: string;
+      prerequisites?: components["schemas"]["CourseCodeDto"][];
+      mediumOfInstruction?: string;
+      aimsObjectives?: string;
+      courseContent?: string;
+      cilosRaw?: string;
+      cilOs?: components["schemas"]["CILOs"][];
+      tlasRaw?: string;
+      tlAs?: components["schemas"]["TLAs"][];
+      assessmentMethodsRaw?: string;
+      assessmentMethods?: components["schemas"]["AssessmentMethod"][];
+    };
+    PdfParseResponseDto: {
+      message?: string;
+      filename?: string;
+      /** Format: int64 */
+      size?: number | string;
+      /** Format: int32 */
+      pages?: number | string;
+      extractedText?: string;
+      parsedSections?: components["schemas"]["ParsedSectionsDto"];
+    };
+    ProblemDetails: {
+      type?: null | string;
+      title?: null | string;
+      /** Format: int32 */
+      status?: null | number | string;
+      detail?: null | string;
+      instance?: null | string;
+    };
+    SimpleCourseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+      courseNumber?: string;
+      /** Format: int32 */
+      codeId?: number | string;
+      codeTag?: string;
+      mostRecentVersion?:
+        | null
+        | components["schemas"]["CourseVersionResponseDto"];
+    };
+    TermResponseDto: {
+      /** Format: int32 */
+      id?: number | string;
+      name?: string;
+    };
+    TLAs: {
+      code: string[];
+      description?: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

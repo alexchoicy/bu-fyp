@@ -74,6 +74,20 @@ public class AppDbContext : IdentityDbContext<User>
             .HasForeignKey(ca => ca.ExcludedCourseVersionId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<CourseVersion>()
+            .HasOne(cv => cv.FromTerm)
+            .WithMany()
+            .HasForeignKey(cv => cv.FromTermId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CourseVersion>()
+            .HasOne(cv => cv.ToTerm)
+            .WithMany()
+            .HasForeignKey(cv => cv.ToTermId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
         modelBuilder.Entity<CategoryGroup>()
             .HasOne(cg => cg.Category)
             .WithMany(c => c.CategoryGroups)
@@ -117,19 +131,6 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(c => c.CourseDepartments)
             .HasForeignKey(cd => cd.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<CourseVersion>()
-            .HasOne(cv => cv.FromTerm)
-            .WithMany()
-            .HasForeignKey(cv => cv.FromTermId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<CourseVersion>()
-            .HasOne(cv => cv.ToTerm)
-            .WithMany()
-            .HasForeignKey(cv => cv.ToTermId)
-            .IsRequired(false)
-            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<CourseDepartment>()
             .HasOne(cd => cd.Department)

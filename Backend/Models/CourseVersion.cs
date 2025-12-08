@@ -58,7 +58,7 @@ public class CourseVersion
     public int FromTermId { get; set; }
 
     [ForeignKey(nameof(FromTermId))]
-    public required Term FromTerm { get; set; }
+    public Term? FromTerm { get; set; }
 
     [Column("to_year")]
     public int? ToYear { get; set; } // null means ongoing/current

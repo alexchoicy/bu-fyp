@@ -4,6 +4,7 @@ using Backend.Models;
 using Backend.Services.AI;
 using Backend.Services.Auth;
 using Backend.Services.Courses;
+using Backend.Services.Facts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -83,7 +84,7 @@ builder.Services.AddSingleton<GeminiProvider>();
 builder.Services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
 
 builder.Services.AddScoped<ICourseService, CourseService>();
-
+builder.Services.AddScoped<IFactService, FactService>();
 
 var app = builder.Build();
 
