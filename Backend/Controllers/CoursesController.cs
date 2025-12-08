@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Backend.Services.Courses;
 using Backend.Services.AI;
+using Backend.Dtos.Courses;
 
 namespace Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/courses")]
     public class CoursesController : ControllerBase
     {
         private readonly ILogger<CoursesController> _logger;
@@ -17,8 +18,11 @@ namespace Backend.Controllers
             _courseService = courseService;
         }
 
-        [HttpPost("create/uploadPDF")]
-        public async Task<IActionResult> UploadPDF(IFormFile file, [FromQuery] string? aiProvider = null)
+        [HttpPost("create/parsePDF")]
+        [ProducesResponseType(typeof(PdfParseResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ParsePDF(IFormFile file, [FromQuery] string? aiProvider = null)
         {
             if (file == null || file.Length == 0)
             {
@@ -39,37 +43,12 @@ namespace Backend.Controllers
             try
             {
                 using Stream stream = file.OpenReadStream();
-                PdfProcessingResult result = await _courseService.ProcessPdfAsync(stream, file.FileName, file.Length);
-
-                return Ok(new
-                {
-                    message = "PDF uploaded and processed successfully",
-                    filename = result.FileName,
-                    size = result.FileSize,
-                    pages = result.Pages,
-                    extractedText = result.ExtractedText,
-                    parsedSections = new
-                    {
-                        courseTitle = result.ParsedData.CourseTitle,
-                        courseCode = result.ParsedData.CourseCode,
-                        noOfUnits = result.ParsedData.NoOfUnits,
-                        offeringDepartment = result.ParsedData.OfferingDepartment,
-                        prerequisites = result.ParsedData.Prerequisites,
-                        mediumOfInstruction = result.ParsedData.MediumOfInstruction,
-                        aimsObjectives = result.ParsedData.AimsObjectives,
-                        courseContent = result.ParsedData.CourseContent,
-                        cilosRaw = result.ParsedData.CILOsRaw,
-                        cilos = result.ParsedData.CILOs,
-                        tlasRaw = result.ParsedData.TLAsRaw,
-                        tlas = result.ParsedData.TLAs,
-                        assessmentMethodsRaw = result.ParsedData.AssessmentMethodsRaw,
-                        assessmentMethods = result.ParsedData.AssessmentMethods
-                    }
-                });
+                PdfParseResponseDto response = await _courseService.ProcessPdfAsync(stream, file.FileName, file.Length);
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing PDF upload");
+                _logger.LogError(ex, "Error processing PDF parse");
                 return StatusCode(500, new { message = "Error processing PDF file" });
             }
         }

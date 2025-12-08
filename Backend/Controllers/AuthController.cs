@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -49,14 +49,14 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetCurrentUser()
         {
-            var user = await _userManager.GetUserAsync(User);
+            User? user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
                 return Unauthorized(new { message = "User not found" });
             }
 
-            var roles = await _userManager.GetRolesAsync(user);
-            var authResponse = new AuthResponseDto
+            IList<string> roles = await _userManager.GetRolesAsync(user);
+            AuthResponseDto authResponse = new AuthResponseDto
             {
                 ID = user.Id,
                 Name = user.Name ?? "",

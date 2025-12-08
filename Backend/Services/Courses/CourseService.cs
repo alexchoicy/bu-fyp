@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Backend.Dtos.Courses;
 using Backend.Models;
 using Backend.Services.AI;
 using UglyToad.PdfPig;
@@ -10,36 +11,9 @@ using UglyToad.PdfPig.DocumentLayoutAnalysis.WordExtractor;
 
 namespace Backend.Services.Courses;
 
-public class ParsedCourseData
-{
-    public string CourseTitle { get; set; } = string.Empty;
-    public string CourseCode { get; set; } = string.Empty;
-    public string NoOfUnits { get; set; } = string.Empty;
-    public string OfferingDepartment { get; set; } = string.Empty;
-    public string Prerequisites { get; set; } = string.Empty;
-    public string MediumOfInstruction { get; set; } = string.Empty;
-    public string AimsObjectives { get; set; } = string.Empty;
-    public string CourseContent { get; set; } = string.Empty;
-    public string CILOsRaw { get; set; } = string.Empty;
-    public string TLAsRaw { get; set; } = string.Empty;
-    public string AssessmentMethodsRaw { get; set; } = string.Empty;
-    public List<CILOs> CILOs { get; set; } = new();
-    public List<TLAs> TLAs { get; set; } = new();
-    public List<AssessmentMethod> AssessmentMethods { get; set; } = new();
-}
-
-public class PdfProcessingResult
-{
-    public string FileName { get; set; } = string.Empty;
-    public long FileSize { get; set; }
-    public int Pages { get; set; }
-    public string ExtractedText { get; set; } = string.Empty;
-    public ParsedCourseData ParsedData { get; set; } = new();
-}
-
 public interface ICourseService
 {
-    Task<PdfProcessingResult> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null);
+    Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null);
 }
 
 
@@ -47,18 +21,7 @@ public class CourseService : ICourseService
 {
     private readonly ILogger<CourseService> _logger;
     private readonly IAIProviderFactory _aiProviderFactory;
-
-    public CourseService(ILogger<CourseService> logger, IAIProviderFactory aiProviderFactory)
-    {
-        _logger = logger;
-        _aiProviderFactory = aiProviderFactory;
-    }
-
-    private ParsedCourseData ParseCourseContent(string fullText)
-    {
-        Dictionary<string, string> sections = new Dictionary<string, string>();
-
-        Dictionary<string, string> sectionPatterns = new Dictionary<string, string>
+    private readonly Dictionary<string, string> sectionPatterns = new Dictionary<string, string>
         {
             { "COURSE_TITLE", @"1\.\s*COURSE TITLE[:\s]*(.+?)(?=2\.\s*COURSE CODE|$)" },
             { "COURSE_CODE", @"2\.\s*COURSE CODE[:\s]*(.+?)(?=3\.\s*NO\.\s*OF UNITS|$)" },
@@ -72,6 +35,15 @@ public class CourseService : ICourseService
             { "TLAS", @"10\.\s*TEACHING\s*[&AND]*\s*LEARNING ACTIVITIES\s*\(?TLAs?\)?[:\s]*(.+?)(?=11\.\s*ASSESSMENT METHODS|$)" },
             { "ASSESSMENT_METHODS", @"11\.\s*ASSESSMENT METHODS\s*\(?AMs?\)?[:\s]*(.+?)$" }
         };
+    public CourseService(ILogger<CourseService> logger, IAIProviderFactory aiProviderFactory)
+    {
+        _logger = logger;
+        _aiProviderFactory = aiProviderFactory;
+    }
+
+    private ParsedSectionsDto ParseCourseContent(string fullText)
+    {
+        Dictionary<string, string> sections = new Dictionary<string, string>();
 
         foreach ((string key, string pattern) in sectionPatterns)
         {
@@ -86,7 +58,7 @@ public class CourseService : ICourseService
             }
         }
 
-        return new ParsedCourseData
+        return new ParsedSectionsDto
         {
             CourseTitle = sections["COURSE_TITLE"],
             CourseCode = sections["COURSE_CODE"],
@@ -96,14 +68,14 @@ public class CourseService : ICourseService
             MediumOfInstruction = sections["MEDIUM_OF_INSTRUCTION"],
             AimsObjectives = sections["AIMS_OBJECTIVES"],
             CourseContent = sections["COURSE_CONTENT"],
-            CILOsRaw = sections["CILOS"],
-            TLAsRaw = sections["TLAS"],
+            CilosRaw = sections["CILOS"],
+            TlasRaw = sections["TLAS"],
             AssessmentMethodsRaw = sections["ASSESSMENT_METHODS"]
         };
     }
 
     // this bro is to extract text from pdf and parse it into sections
-    public async Task<PdfProcessingResult> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null)
+    public async Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null)
     {
         using PdfDocument document = PdfDocument.Open(pdfStream);
         StringBuilder extractedText = new StringBuilder();
@@ -120,36 +92,38 @@ public class CourseService : ICourseService
         }
 
         string fullText = extractedText.ToString();
-        ParsedCourseData parsedSections = ParseCourseContent(fullText);
+        ParsedSectionsDto parsedSections = ParseCourseContent(fullText);
 
         await ExtractDataWithAI(parsedSections, providerType);
 
-        return new PdfProcessingResult
+        return new PdfParseResponseDto
         {
-            FileName = fileName,
-            FileSize = fileSize,
+            Message = "PDF uploaded and processed successfully",
+            Filename = fileName,
+            Size = fileSize,
             Pages = document.NumberOfPages,
             ExtractedText = fullText,
-            ParsedData = parsedSections
+            ParsedSections = parsedSections
         };
     }
-
-    public async Task ExtractDataWithAI(ParsedCourseData parsedCourseData, AIProviderType? providerType = null)
+    //TODO: I think it is possible to extract without AI, try later
+    //Tabula-sharp
+    public async Task ExtractDataWithAI(ParsedSectionsDto parsedCourseData, AIProviderType? providerType = null)
     {
         IAIProvider provider = providerType.HasValue
                 ? _aiProviderFactory.GetProvider(providerType.Value)
                 : ((AIProviderFactory)_aiProviderFactory).GetDefaultProvider();
 
-        Task<List<CILOs>>? cilosTask = !string.IsNullOrWhiteSpace(parsedCourseData.CILOsRaw)
-            ? provider.ExtractCILOsAsync(parsedCourseData.CILOsRaw)
+        Task<List<CILOs>>? cilosTask = !string.IsNullOrWhiteSpace(parsedCourseData.CilosRaw)
+            ? provider.ExtractCILOsAsync(parsedCourseData.CilosRaw)
             : Task.FromResult(new List<CILOs>());
 
         Task<List<AssessmentMethod>>? assessmentTask = !string.IsNullOrWhiteSpace(parsedCourseData.AssessmentMethodsRaw)
             ? provider.ExtractAssessmentMethodsAsync(parsedCourseData.AssessmentMethodsRaw)
             : Task.FromResult(new List<AssessmentMethod>());
 
-        Task<List<TLAs>>? tlasTask = !string.IsNullOrWhiteSpace(parsedCourseData.TLAsRaw)
-            ? provider.ExtractTLAsAsync(parsedCourseData.TLAsRaw)
+        Task<List<TLAs>>? tlasTask = !string.IsNullOrWhiteSpace(parsedCourseData.TlasRaw)
+            ? provider.ExtractTLAsAsync(parsedCourseData.TlasRaw)
             : Task.FromResult(new List<TLAs>());
 
         await Task.WhenAll(cilosTask, assessmentTask, tlasTask);

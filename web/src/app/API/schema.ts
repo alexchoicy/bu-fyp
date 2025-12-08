@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/Auth/login": {
+    "/api/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -58,7 +58,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Auth/me": {
+    "/api/auth/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -106,7 +106,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Courses/create/uploadPDF": {
+    "/api/courses/create/parsePDF": {
         parameters: {
             query?: never;
             header?: never;
@@ -137,6 +137,28 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
+                    content: {
+                        "text/plain": components["schemas"]["PdfParseResponseDto"];
+                        "application/json": components["schemas"]["PdfParseResponseDto"];
+                        "text/json": components["schemas"]["PdfParseResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content?: never;
                 };
             };
@@ -151,16 +173,54 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AssessmentCategory: number;
+        AssessmentMethod: {
+            name: string;
+            /** Format: double */
+            weighting?: number | string;
+            category?: components["schemas"]["AssessmentCategory"];
+            description?: string;
+        };
         AuthResponseDto: {
             roles: string[];
             name: string;
             id: string;
+        };
+        CILOs: {
+            code: string;
+            description?: string;
         };
         /** Format: binary */
         IFormFile: string;
         LoginRequestDto: {
             username: string;
             password: string;
+        };
+        ParsedSectionsDto: {
+            courseTitle?: string;
+            courseCode?: string;
+            noOfUnits?: string;
+            offeringDepartment?: string;
+            prerequisites?: string;
+            mediumOfInstruction?: string;
+            aimsObjectives?: string;
+            courseContent?: string;
+            cilosRaw?: string;
+            cilOs?: components["schemas"]["CILOs"][];
+            tlasRaw?: string;
+            tlAs?: components["schemas"]["TLAs"][];
+            assessmentMethodsRaw?: string;
+            assessmentMethods?: components["schemas"]["AssessmentMethod"][];
+        };
+        PdfParseResponseDto: {
+            message?: string;
+            filename?: string;
+            /** Format: int64 */
+            size?: number | string;
+            /** Format: int32 */
+            pages?: number | string;
+            extractedText?: string;
+            parsedSections?: components["schemas"]["ParsedSectionsDto"];
         };
         ProblemDetails: {
             type?: null | string;
@@ -169,6 +229,10 @@ export interface components {
             status?: null | number | string;
             detail?: null | string;
             instance?: null | string;
+        };
+        TLAs: {
+            code: string[];
+            description?: string;
         };
     };
     responses: never;

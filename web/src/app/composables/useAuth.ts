@@ -1,14 +1,14 @@
 import type { paths } from "~/API/schema";
 
 type UserInfo =
-  paths["/api/Auth/login"]["post"]["responses"]["200"]["content"]["application/json"];
+  paths["/api/auth/login"]["post"]["responses"]["200"]["content"]["application/json"];
 
 export const useAuth = () => {
   const user = useState<UserInfo | null>("authUser", () => null);
   const loading = useState<boolean>("authLoading", () => false);
 
   const login = async (
-    credential: paths["/api/Auth/login"]["post"]["requestBody"]["content"]["application/json"]
+    credential: paths["/api/auth/login"]["post"]["requestBody"]["content"]["application/json"]
   ) => {
     loading.value = true;
     try {
