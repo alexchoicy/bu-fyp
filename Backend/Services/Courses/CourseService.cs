@@ -46,7 +46,7 @@ public class CourseService : ICourseService
             { "ASSESSMENT_METHODS", @"11\.\s*ASSESSMENT METHODS\s*\(?AMs?\)?[:\s]*(.+?)$" }
         };
 
-    private static readonly Regex courseCodeExtract = new Regex(@"([A-Za-z]{4})(\d{4})");
+    private static readonly Regex courseCodeExtract = new Regex(@"\b([A-Za-z]{4})\s?(\d{4})\b");
 
     public CourseService(ILogger<CourseService> logger, AppDbContext context, IAIProviderFactory aiProviderFactory)
     {
