@@ -37,6 +37,9 @@ public class ProgrammeVersion
     [Column("is_active")]
     public bool IsActive { get; set; }
 
+    [Column("total_credits")]
+    public required int TotalCredits { get; set; }
+    
 
     // Navigation properties
     public ICollection<StudentProgramme> StudentProgrammes { get; set; } = new List<StudentProgramme>();

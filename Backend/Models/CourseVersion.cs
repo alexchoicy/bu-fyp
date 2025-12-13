@@ -29,9 +29,6 @@ public class CourseVersion
     [ForeignKey(nameof(CourseId))]
     public Course Course { get; set; } = null!;
 
-    [Column("credit")]
-    public int Credit { get; set; } = 0;
-
     [Column("description")]
     public string Description { get; set; } = string.Empty;
 

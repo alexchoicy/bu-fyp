@@ -1,5 +1,4 @@
 ﻿using System;
-using Backend.Models;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -62,7 +61,7 @@ namespace Backend.Migrations
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "text", nullable: true),
-                    rules = table.Column<RuleNode>(type: "jsonb", nullable: true),
+                    rules = table.Column<string>(type: "jsonb", nullable: true),
                     notes = table.Column<string>(type: "text", nullable: false),
                     min_credit = table.Column<int>(type: "integer", nullable: false),
                     priority = table.Column<int>(type: "integer", nullable: false),
@@ -138,6 +137,24 @@ namespace Backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_programmes", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tags",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    tag_type = table.Column<int>(type: "integer", nullable: false),
+                    description = table.Column<string>(type: "text", nullable: true),
+                    embedding = table.Column<float[]>(type: "real[]", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tags", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -319,7 +336,8 @@ namespace Backend.Migrations
                     version_number = table.Column<int>(type: "integer", nullable: false),
                     start_year = table.Column<int>(type: "integer", nullable: false),
                     end_year = table.Column<int>(type: "integer", nullable: false),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false)
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    total_credits = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -357,13 +375,39 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "course_tags",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    course_id = table.Column<int>(type: "integer", nullable: false),
+                    tag_id = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_course_tags", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_course_tags_courses_course_id",
+                        column: x => x.course_id,
+                        principalTable: "courses",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_course_tags_tags_tag_id",
+                        column: x => x.tag_id,
+                        principalTable: "tags",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "course_versions",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     course_id = table.Column<int>(type: "integer", nullable: false),
-                    credit = table.Column<int>(type: "integer", nullable: false),
                     description = table.Column<string>(type: "text", nullable: false),
                     aim_and_objectives = table.Column<string>(type: "text", nullable: false),
                     course_content = table.Column<string>(type: "text", nullable: false),
@@ -440,7 +484,8 @@ namespace Backend.Migrations
                     course_id = table.Column<int>(type: "integer", nullable: false),
                     term_id = table.Column<int>(type: "integer", nullable: false),
                     academic_year = table.Column<int>(type: "integer", nullable: false),
-                    grade = table.Column<string>(type: "text", nullable: true),
+                    grade = table.Column<int>(type: "integer", nullable: true),
+                    status = table.Column<int>(type: "integer", nullable: false),
                     notes = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
@@ -749,6 +794,16 @@ namespace Backend.Migrations
                 column: "term_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_course_tags_course_id",
+                table: "course_tags",
+                column: "course_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_course_tags_tag_id",
+                table: "course_tags",
+                column: "tag_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_course_version_mediums_course_version_id",
                 table: "course_version_mediums",
                 column: "course_version_id");
@@ -856,6 +911,9 @@ namespace Backend.Migrations
                 name: "course_pre_reqs");
 
             migrationBuilder.DropTable(
+                name: "course_tags");
+
+            migrationBuilder.DropTable(
                 name: "course_version_mediums");
 
             migrationBuilder.DropTable(
@@ -878,6 +936,9 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "course_sections");
+
+            migrationBuilder.DropTable(
+                name: "tags");
 
             migrationBuilder.DropTable(
                 name: "medium_of_instructions");

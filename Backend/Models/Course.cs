@@ -36,5 +36,6 @@ public class Course
     public ICollection<GroupCourse> GroupCourses { get; set; } = new List<GroupCourse>();
     public ICollection<CourseDepartment> CourseDepartments { get; set; } = new List<CourseDepartment>();
     public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
+    public ICollection<CourseTag> CourseTags { get; set; } = new List<CourseTag>();
 
 }

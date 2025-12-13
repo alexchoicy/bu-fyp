@@ -34,7 +34,11 @@ public class StudentCourse
     public int AcademicYear { get; set; }
 
     [Column("grade")]
-    public string? Grade { get; set; }
+    public Grade? Grade { get; set; }
+
+    [Required]
+    [Column("status")]
+    public StudentCourseStatus Status { get; set; } = StudentCourseStatus.Enrolled;
 
     [Column("notes")]
     public string Notes { get; set; } = string.Empty;

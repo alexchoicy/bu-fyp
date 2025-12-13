@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using Backend.Data;
-using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -14,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251208095723_init")]
+    [Migration("20251211074339_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -53,7 +52,7 @@ namespace Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("priority");
 
-                    b.Property<RuleNode>("Rules")
+                    b.Property<string>("RulesJson")
                         .HasColumnType("jsonb")
                         .HasColumnName("rules");
 
@@ -329,6 +328,36 @@ namespace Backend.Migrations
                     b.ToTable("course_sections");
                 });
 
+            modelBuilder.Entity("Backend.Models.CourseTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("course_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tag_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("course_tags");
+                });
+
             modelBuilder.Entity("Backend.Models.CourseVersion", b =>
                 {
                     b.Property<int>("Id")
@@ -355,10 +384,6 @@ namespace Backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
-
-                    b.Property<int>("Credit")
-                        .HasColumnType("integer")
-                        .HasColumnName("credit");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -593,6 +618,10 @@ namespace Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("start_year");
 
+                    b.Property<int>("TotalCredits")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_credits");
+
                     b.Property<int>("VersionNumber")
                         .HasColumnType("integer")
                         .HasColumnName("version_number");
@@ -618,14 +647,18 @@ namespace Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("academic_year");
 
-                    b.Property<string>("Grade")
-                        .HasColumnType("text")
+                    b.Property<int?>("Grade")
+                        .HasColumnType("integer")
                         .HasColumnName("grade");
 
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("notes");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
 
                     b.Property<int>("TermId")
                         .HasColumnType("integer")
@@ -655,6 +688,45 @@ namespace Backend.Migrations
                     b.HasIndex("ProgrammeVersionId");
 
                     b.ToTable("student_programmes");
+                });
+
+            modelBuilder.Entity("Backend.Models.Tag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.PrimitiveCollection<float[]>("Embedding")
+                        .HasColumnType("real[]")
+                        .HasColumnName("embedding");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("TagType")
+                        .HasColumnType("integer")
+                        .HasColumnName("tag_type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tags");
                 });
 
             modelBuilder.Entity("Backend.Models.Term", b =>
@@ -1021,6 +1093,25 @@ namespace Backend.Migrations
                     b.Navigation("Term");
                 });
 
+            modelBuilder.Entity("Backend.Models.CourseTag", b =>
+                {
+                    b.HasOne("Backend.Models.Course", "Course")
+                        .WithMany("CourseTags")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Tag", "Tag")
+                        .WithMany("CourseTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("Backend.Models.CourseVersion", b =>
                 {
                     b.HasOne("Backend.Models.Course", "Course")
@@ -1236,6 +1327,8 @@ namespace Backend.Migrations
                 {
                     b.Navigation("CourseDepartments");
 
+                    b.Navigation("CourseTags");
+
                     b.Navigation("CourseVersions");
 
                     b.Navigation("GroupCourses");
@@ -1292,6 +1385,11 @@ namespace Backend.Migrations
                     b.Navigation("ProgrammeCategories");
 
                     b.Navigation("StudentProgrammes");
+                });
+
+            modelBuilder.Entity("Backend.Models.Tag", b =>
+                {
+                    b.Navigation("CourseTags");
                 });
 
             modelBuilder.Entity("Backend.Models.Term", b =>

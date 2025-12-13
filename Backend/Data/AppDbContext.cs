@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Programme> Programmes { get; set; }
     public DbSet<ProgrammeVersion> ProgrammeVersions { get; set; }
     public DbSet<StudentProgramme> StudentProgrammes { get; set; }
+    public DbSet<StudentCourse> StudentCourses { get; set; }
     public DbSet<ProgrammeCategory> ProgrammeCategories { get; set; }
 
     // Category & Group
@@ -39,6 +40,10 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<MediumOfInstruction> MediumOfInstructions { get; set; }
     public DbSet<CourseVersionMedium> CourseVersionMediums { get; set; }
     public DbSet<CourseAssessment> CourseAssessments { get; set; }
+
+    // Tags
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<CourseTag> CourseTags { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -179,6 +184,18 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(t => t.StudentCourses)
             .HasForeignKey(sc => sc.TermId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CourseTag>()
+            .HasOne(ct => ct.Course)
+            .WithMany(c => c.CourseTags)
+            .HasForeignKey(ct => ct.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CourseTag>()
+            .HasOne(ct => ct.Tag)
+            .WithMany(t => t.CourseTags)
+            .HasForeignKey(ct => ct.TagId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         List<IdentityRole> roles = new()
     {
