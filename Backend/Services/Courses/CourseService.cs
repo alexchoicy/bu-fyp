@@ -5,6 +5,7 @@ using Backend.Dtos.Courses;
 using Backend.Dtos.Facts;
 using Backend.Models;
 using Backend.Services.AI;
+using Backend.Services.Facts;
 using Microsoft.EntityFrameworkCore;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
@@ -22,6 +23,7 @@ public interface ICourseService
     Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null);
     Task<int> CreateCourseAsync(CreateCourseDto createCourseDto);
     Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto);
+    Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null);
 }
 
 
@@ -30,6 +32,7 @@ public class CourseService : ICourseService
     private readonly ILogger<CourseService> _logger;
     private readonly IAIProviderFactory _aiProviderFactory;
     private readonly AppDbContext _context;
+    private readonly IFactService _factService;
 
     private readonly Dictionary<string, string> sectionPatterns = new Dictionary<string, string>
         {
@@ -48,11 +51,11 @@ public class CourseService : ICourseService
 
     private static readonly Regex courseCodeExtract = new Regex(@"\b([A-Za-z]{4})\s?(\d{4})\b");
 
-    public CourseService(ILogger<CourseService> logger, AppDbContext context, IAIProviderFactory aiProviderFactory)
+    public CourseService(AppDbContext context, IAIProviderFactory aiProviderFactory, IFactService factService)
     {
-        _logger = logger;
         _context = context;
         _aiProviderFactory = aiProviderFactory;
+        _factService = factService;
     }
 
     private CourseResponseDto MapCourseToResponseDto(Course course)
@@ -585,6 +588,95 @@ public class CourseService : ICourseService
         await _context.SaveChangesAsync();
 
         return courseVersion.Id;
-
     }
+    
+    public async Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null)
+    {
+        int defaultYear = year ?? _factService.GetCurrentAcademicYear();
+        int defaultTermId = termId ?? _factService.GetCurrentSemester();
+
+        Term? term = await _context.Terms.FindAsync(defaultTermId);
+        if (term == null)
+        {
+            throw new ArgumentException($"Term with ID {defaultTermId} not found");
+        }
+
+        List<CourseSection> sections = new List<CourseSection>();
+        
+        if (excludeEnrolled)
+        {
+            var enrolledCourseIds = await _context.StudentCourses
+                .Where(sc => sc.StudentId == studentId)
+                .Select(sc => sc.CourseId)
+                .ToListAsync();
+            
+            sections = await _context.CourseSections
+                .Where(sc => sc.Year == defaultYear && sc.TermId == defaultTermId)
+                .Where(sc => !enrolledCourseIds.Contains(sc.CourseVersion.CourseId))
+                .Include(cs => cs.CourseVersion)
+                .ThenInclude(cv => cv.Course)
+                .ThenInclude(c => c.Code)
+                .Include(cs => cs.CourseMeetings)
+                .Include(cs => cs.Term)
+                .ToListAsync();
+        }
+        else
+        {
+            sections = await _context.CourseSections
+                .Where(cs => cs.Year == defaultYear && cs.TermId == defaultTermId)
+                .Include(cs => cs.CourseVersion)
+                .ThenInclude(cv => cv.Course)
+                .ThenInclude(c => c.Code)
+                .Include(cs => cs.CourseMeetings)
+                .Include(cs => cs.Term)
+                .ToListAsync();
+        }
+        
+
+        List<TimetableEntryDto> entries = sections
+            .GroupBy(section => new
+            {
+                section.CourseVersionId,
+                section.CourseVersion.VersionNumber,
+                section.CourseVersion.CourseId,
+                CourseName = section.CourseVersion.Course.Name,
+                CourseCode = $"{section.CourseVersion.Course.Code.Tag}{section.CourseVersion.Course.CourseNumber}",
+                CodeTag = section.CourseVersion.Course.Code.Tag,
+                CourseNumber = section.CourseVersion.Course.CourseNumber,
+                Credit = section.CourseVersion.Course.Credit
+            })
+            .Select(group => new TimetableEntryDto
+            {
+                CourseId = group.Key.CourseId,
+                CourseName = group.Key.CourseName,
+                CourseCode = group.Key.CourseCode,
+                CodeTag = group.Key.CodeTag,
+                CourseNumber = group.Key.CourseNumber,
+                Credit = group.Key.Credit,
+                VersionId = group.Key.CourseVersionId,
+                VersionNumber = group.Key.VersionNumber,
+                Sections = group.Select(section => new TimetableSectionDto
+                {
+                    SectionId = section.Id,
+                    SectionNumber = section.SectionNumber,
+                    Meetings = section.CourseMeetings.Select(m => new TimetableMeetingDto
+                    {
+                        Id = m.Id,
+                        MeetingType = m.MeetingType,
+                        Day = m.Day,
+                        StartTime = m.StartTime,
+                        EndTime = m.EndTime
+                    }).ToList()
+                }).ToList()
+            })
+            .ToList();
+
+        return new TimetableResponseDto
+        {
+            Year = defaultYear,
+            Term = term.Name,
+            Entries = entries
+        };
+    }
+    
 }
