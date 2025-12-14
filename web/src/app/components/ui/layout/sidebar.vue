@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, Calendar, LayoutDashboard, Settings } from "lucide-vue-next";
+import { BookOpen, Calendar, GraduationCap, LayoutDashboard, Settings } from "lucide-vue-next";
 
 const { user } = useAuth();
 
@@ -8,6 +8,11 @@ const navigationUser = [
     title: "Dashboard",
     icon: LayoutDashboard,
     href: "/",
+  },
+  {
+    title: "Programmes",
+    icon: GraduationCap,
+    href: "/user/programme",
   },
   {
     title: "Courses",
