@@ -161,7 +161,7 @@ const hasConflict = (section: Section) => {
                     <span class="shrink-0 text-muted-foreground">
                       {{ getDayName(meeting.day) }}
                     </span>
-                    <span className="shrink-0 text-muted-foreground">
+                    <span class="shrink-0 text-muted-foreground">
                       {{ formatTime(meeting.startTime) }}-{{ formatTime(meeting.endTime) }}
                     </span>
                   </div>
