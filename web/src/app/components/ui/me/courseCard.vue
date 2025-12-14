@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type {components} from "~/API/schema";
-import {GradeDisplayNames} from "~/types/static/grade";
-import {Calendar} from "lucide-vue-next";
+import type { components } from "~/API/schema";
+import { GradeDisplayNames } from "~/types/static/grade";
+import { Calendar } from "lucide-vue-next";
 
 defineProps<{
   courses: components["schemas"]["UserCourseDto"][]
@@ -25,13 +25,13 @@ defineProps<{
           <p class="mt-2 text-base font-medium">{{ course.courseName }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <!-- <Button variant="outline" size="sm">
             View Course Detail
           </Button>
 
           <Button variant="destructive" size="sm">
             Delete
-          </Button>
+          </Button> -->
 
         </div>
       </div>
@@ -39,10 +39,10 @@ defineProps<{
     <CardContent class="space-y-3">
       <div class="flex flex-wrap gap-4 text-sm">
         <div class="flex items-center gap-2">
-          <Calendar class="h-4 w-4 text-muted-foreground"/>
+          <Calendar class="h-4 w-4 text-muted-foreground" />
           <span v-if="course.term && course.academicYear">{{ course.term }} {{
-              course.academicYear
-            }}-{{ course.academicYear + 1 }}</span>
+            course.academicYear
+          }}-{{ course.academicYear + 1 }}</span>
         </div>
       </div>
       <div v-if="course.notes" class="text-sm">

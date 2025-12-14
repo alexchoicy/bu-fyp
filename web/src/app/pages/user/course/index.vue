@@ -26,14 +26,14 @@ const plannedCourses = computed(() =>
             View and manage your course history, grades, and academic progress
           </p>
         </div>
-        <div>
-          <Link href="/user/course/create">
-          Add new Records
-          </Link>
-        </div>
+        <Button asChild>
+          <NuxtLink to="/user/course/create">
+            Add new record
+          </NuxtLink>
+        </Button>
       </div>
 
-      <Tabs>
+      <Tabs default-value="completed">
         <TabsList>
           <TabsTrigger value="enrolled">Enrolled ({{ enrolledCourses.length }})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({{ completedCourses.length }})</TabsTrigger>

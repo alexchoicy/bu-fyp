@@ -14,6 +14,8 @@ watch(records, (newRecords) => {
     availableCourses.value = (courses.value ?? []).filter(course => !selectedCourseIds.includes(course.id));
 });
 
+const courseById = (id?: number) => (courses.value ?? []).find(c => c.id === id);
+
 </script>
 
 <template>
@@ -32,5 +34,35 @@ watch(records, (newRecords) => {
 
         <UiMeCourseRecordParseDialog v-model:open="parseDialogOpen" v-model:records="records"
             :courses="courses ?? []" />
+
+        <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Parsed Items</h2>
+            <div v-if="records.length === 0" class="text-muted-foreground">No items parsed yet.</div>
+            <div v-else class="rounded-md border">
+                <div class="grid grid-cols-12 gap-2 p-3 text-sm font-medium bg-muted/50">
+                    <div class="col-span-4">Course</div>
+                    <div class="col-span-3">Code</div>
+                    <div class="col-span-3">Grade</div>
+                    <div class="col-span-2" />
+                </div>
+                <div class="divide-y">
+                    <div v-for="(rec, idx) in records" :key="idx" class="grid grid-cols-12 gap-2 p-3 items-center">
+                        <div class="col-span-4">
+                            {{ courseById(rec.courseId)?.name ?? 'Unknown course' }}
+                        </div>
+                        <div class="col-span-3">
+                            {{ courseById(rec.courseId)?.codeTag ?? '-' }} {{ courseById(rec.courseId)?.courseNumber ??
+                                '-' }}
+                        </div>
+                        <div class="col-span-3">
+                            {{ rec.grade ?? rec.status }}
+                        </div>
+                        <div class="col-span-2 flex justify-end">
+                            <Button variant="outline" size="sm" @click="records.splice(idx, 1)">Remove</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
