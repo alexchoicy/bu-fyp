@@ -1,13 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Backend.Models;
 using Microsoft.IdentityModel.Tokens;
-
+using Backend.Models;
 namespace Backend.Services.Auth
 {
     public interface ITokenService
     {
-        string CreateToken(User user, List<string> roles);
+        string CreateToken(Models.User user, List<string> roles);
     }
     public class TokenService : ITokenService
     {
@@ -20,7 +19,7 @@ namespace Backend.Services.Auth
             _key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_config["JWT:SecretKey"]!));
         }
 
-        public string CreateToken(User user, List<string> roles)
+        public string CreateToken(Models.User user, List<string> roles)
         {
             List<Claim> claims = new List<Claim>
            {

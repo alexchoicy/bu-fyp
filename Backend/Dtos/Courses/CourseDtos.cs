@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Backend.Dtos.Courses;
 
 using Backend.Dtos.Facts;
@@ -112,6 +114,8 @@ public class CourseVersionResponseDto
 
     public List<AssessmentResponseDto> Assessments { get; set; } = new();
     public List<string> MediumOfInstruction { get; set; } = new();
+    public List<SimpleCourseDto> PreRequisites { get; set; } = new();
+    public List<SimpleCourseDto> AntiRequisites { get; set; } = new();
 }
 
 public class AssessmentResponseDto
@@ -132,3 +136,35 @@ public class SimpleCourseDto
     public string CodeTag { get; set; } = string.Empty;
     public CourseVersionResponseDto? MostRecentVersion { get; set; }
 }
+
+public class UserCourseDto
+{
+    public int CourseId { get; set; }
+    public string CourseName { get; set; } = string.Empty;
+    public string CourseNumber { get; set; } = string.Empty;
+    public int CodeId { get; set; }
+    public string CodeTag { get; set; } = string.Empty;
+    public int Credit { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public StudentCourseStatus Status { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Grade? Grade { get; set; }
+    public string Term { get; set; } = string.Empty;
+    public int TermNumber { get; set; }
+    public int AcademicYear { get; set; }
+    public string Notes { get; set; } = string.Empty;
+}
+
+public class CreateStudentCourseDto
+{
+    public int CourseId { get; set; }
+    public int TermId { get; set; }
+    public int AcademicYear { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public Grade? Grade { get; set; }
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public StudentCourseStatus Status { get; set; } = StudentCourseStatus.Enrolled;
+    public string Notes { get; set; } = string.Empty;
+}
+
+

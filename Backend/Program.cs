@@ -5,6 +5,8 @@ using Backend.Services.AI;
 using Backend.Services.Auth;
 using Backend.Services.Courses;
 using Backend.Services.Facts;
+using Backend.Services.Programmes;
+using Backend.Services.User;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +87,9 @@ builder.Services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
 
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IFactService, FactService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProgrammeService, ProgrammeService>();
+builder.Services.AddScoped<IEvaluateRule, EvaluateRule>();
 
 var app = builder.Build();
 
@@ -110,7 +115,8 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await UserSeed.SeedAsync(userManager, roleManager);
     // Seed Data
-    await DataSeed.SeedAsync(dbContext);
+    var aiProviderFactory = scope.ServiceProvider.GetRequiredService<IAIProviderFactory>();
+    await DataSeed.SeedAsync(dbContext, aiProviderFactory);
 
     Console.WriteLine("Database Seeded");
 }

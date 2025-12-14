@@ -1,5 +1,4 @@
 using Backend.Dtos.Auth;
-using Backend.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Services.Auth
@@ -11,8 +10,8 @@ namespace Backend.Services.Auth
     public class AuthService : IAuthService
     {
         private readonly ITokenService _tokenService;
-        private readonly UserManager<User> _userManager;
-        public AuthService(ITokenService tokenService, UserManager<User> userManager)
+        private readonly UserManager<Models.User> _userManager;
+        public AuthService(ITokenService tokenService, UserManager<Models.User> userManager)
         {
             _tokenService = tokenService;
             _userManager = userManager;
@@ -20,7 +19,7 @@ namespace Backend.Services.Auth
 
         public async Task<(AuthResponseDto?, string?)> Login(LoginRequestDto loginRequest)
         {
-            User? user = await _userManager.FindByNameAsync(loginRequest.Username);
+            Models.User? user = await _userManager.FindByNameAsync(loginRequest.Username);
             if (user == null)
             {
                 return (null, null);

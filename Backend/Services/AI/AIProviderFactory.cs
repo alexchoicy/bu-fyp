@@ -15,6 +15,7 @@ public interface IAIProvider
     Task<List<TLAs>> ExtractTLAsAsync(string text);
 
     Task<List<AssessmentMethod>> ExtractAssessmentMethodsAsync(string text);
+    Task<float[]> CreateEmbeddingAsync(string text);
 }
 
 

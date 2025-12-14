@@ -9,6 +9,11 @@ public class GeminiProvider : IAIProvider
         throw new NotImplementedException();
     }
 
+    public Task<float[]> CreateEmbeddingAsync(string text)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<List<CILOs>> ExtractCILOsAsync(string text)
     {
         throw new NotImplementedException();

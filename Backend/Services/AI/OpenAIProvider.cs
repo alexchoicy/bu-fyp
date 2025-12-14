@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Azure.AI.OpenAI;
 using Backend.Models;
 using OpenAI.Chat;
+using OpenAI.Embeddings;
 
 namespace Backend.Services.AI;
 
@@ -249,6 +250,23 @@ public class OpenAIProvider : IAIProvider
         {
             _logger.LogError(ex, "Error occurred while extracting TLAs using OpenAI");
             return new List<TLAs>();
+        }
+    }
+    
+    
+    public async Task<float[]> CreateEmbeddingAsync(string text)
+    {
+        try
+        {
+            EmbeddingClient embeddingClient = _client.GetEmbeddingClient("text-embedding-3-large");
+            OpenAIEmbedding embedding = await embeddingClient.GenerateEmbeddingAsync(text);
+            ReadOnlyMemory<float> vector = embedding.ToFloats();
+            return vector.ToArray();
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error occurred while creating embedding");
+            throw;
         }
     }
 }

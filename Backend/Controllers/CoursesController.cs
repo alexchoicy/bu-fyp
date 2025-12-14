@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using Backend.Services.Courses;
 using Backend.Services.AI;
 using Backend.Dtos.Courses;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/courses")]
+    [Authorize]
     public class CoursesController : ControllerBase
     {
         private readonly ILogger<CoursesController> _logger;
@@ -21,11 +24,24 @@ namespace Backend.Controllers
         [HttpGet]
         [ProducesResponseType(typeof(List<CourseResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetCourses()
+        public async Task<IActionResult> GetCourses([FromQuery] bool excludeEnrolled = false)
         {
             try
             {
-                var courses = await _courseService.GetCoursesAsync();
+                List<CourseResponseDto> courses;
+                if (excludeEnrolled)
+                {
+                    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        return Unauthorized(new { message = "User ID not found in token" });
+                    }
+                    courses = await _courseService.GetCoursesAsync(userId);
+                }
+                else
+                {
+                    courses = await _courseService.GetCoursesAsync();
+                }
                 return Ok(courses);
             }
             catch (Exception ex)
