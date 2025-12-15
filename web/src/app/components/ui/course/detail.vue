@@ -18,6 +18,7 @@ import {
     Link2,
     ArrowUpRight,
     Ban,
+    AlertCircleIcon,
 } from "lucide-vue-next";
 import type { components } from "~/API/schema";
 
@@ -27,6 +28,9 @@ type CourseVersionResponseDto =
 
 const route = useRoute();
 const courseId = computed(() => route.params.id as string);
+
+const { data: studied } = useAPI<components["schemas"]["UserCourseDto"][]>('me/courses')
+
 
 // Fetch course data
 const { data: course, status } = useAPI<CourseResponseDto>(
@@ -69,6 +73,16 @@ const antiRequisites = computed(
 const totalLinkedCourses = computed(
     () => preRequisites.value.length + antiRequisites.value.length
 );
+
+const studiedIds = computed(() => new Set((studied.value ?? []).map(sc => String(sc.courseId))));
+
+const studiedPreRequisites = computed(() => {
+    return preRequisites.value.filter(pr => !studiedIds.value.has(String(pr.id)));
+});
+
+const studiedAntiRequisites = computed(() => {
+    return antiRequisites.value.filter(anti => studiedIds.value.has(String(anti.id)));
+});
 
 // Assessment category labels
 const categoryLabels: Record<string, string> = {
@@ -132,12 +146,12 @@ function formatCourseCode(course?: components["schemas"]["SimpleCourseDto"]) {
                         </p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <!-- <div class="flex items-center gap-2">
                     <Button variant="outline" size="sm">
                         <Download class="h-4 w-4 mr-2" />
                         Export PDF
                     </Button>
-                </div>
+                </div> -->
             </div>
         </header>
 
@@ -161,6 +175,35 @@ function formatCourseCode(course?: components["schemas"]["SimpleCourseDto"]) {
         <!-- Main Content -->
         <main v-else class="container px-4 py-6 md:px-6 md:py-8 max-w-5xl mx-auto">
             <div class="space-y-6">
+                <Alert v-if="studiedAntiRequisites.length > 0" variant="destructive">
+                    <AlertCircleIcon />
+                    <AlertTitle>
+                        You have studied anti-requisite course(s) for this course.
+                    </AlertTitle>
+                    <AlertDescription>
+                        <ul class="mt-2 list-inside list-disc space-y-1">
+                            <li v-for="anti in studiedAntiRequisites" :key="anti.id">
+                                {{ formatCourseCode(anti) }} - {{ anti.name || "Untitled course" }}
+                            </li>
+                        </ul>
+                    </AlertDescription>
+                </Alert>
+
+                <Alert v-if="studiedPreRequisites.length > 0" variant="destructive">
+                    <AlertCircleIcon />
+                    <AlertTitle>
+                        You need to study the following pre-requisite course(s) before taking this course.
+                    </AlertTitle>
+                    <AlertDescription>
+                        <ul class="mt-2 list-inside list-disc space-y-1">
+                            <li v-for="pre in studiedPreRequisites" :key="pre.id">
+                                {{ formatCourseCode(pre) }} - {{ pre.name || "Untitled course" }}
+                            </li>
+                        </ul>
+                    </AlertDescription>
+                </Alert>
+
+
                 <!-- Course Info Summary -->
                 <Card>
                     <CardHeader class="pb-3">
