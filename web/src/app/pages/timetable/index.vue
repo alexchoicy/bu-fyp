@@ -39,6 +39,15 @@ const handleRemoveSection = (sectionId: number) => {
     (s) => s.sectionId !== sectionId
   );
 };
+
+const totalCredits = computed(() => {
+  return selectedSections.value.reduce((total, section) => {
+    const course = availableItems.value?.entries?.find((c) =>
+      c.sections!.some((s) => s.sectionId === section.sectionId)
+    );
+    return total + (course?.credit ?? 0);
+  }, 0);
+});
 </script>
 
 <template>
@@ -48,6 +57,12 @@ const handleRemoveSection = (sectionId: number) => {
         <div class="flex items-center gap-2">
           <Calendar class="h-5 w-5 text-primary" />
           <h1 class="text-lg font-semibold">Timetable Planner</h1>
+        </div>
+        <div class="text-sm font-medium">
+          Total Credits: <span class="text-primary">{{ totalCredits }}</span>
+        </div>
+        <div>
+
         </div>
       </div>
     </header>
