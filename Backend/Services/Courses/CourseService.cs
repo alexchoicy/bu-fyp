@@ -24,7 +24,7 @@ public interface ICourseService
     Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize, AIProviderType? providerType = null);
     Task<int> CreateCourseAsync(CreateCourseDto createCourseDto);
     Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto);
-    Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null);
+    Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null, int? courseGroupId = null, int? categoryGroupId = null);
 }
 
 
@@ -429,7 +429,7 @@ public class CourseService : ICourseService
         string fullText = extractedText.ToString();
         ParsedSectionsDto parsedSections = ParseCourseContent(fullText);
 
-        // await ExtractDataWithAI(parsedSections, providerType);
+        await ExtractDataWithAI(parsedSections, providerType);
 
         return new PdfParseResponseDto
         {
@@ -701,7 +701,7 @@ public class CourseService : ICourseService
         return courseVersion.Id;
     }
     
-    public async Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null)
+    public async Task<TimetableResponseDto> GetTimetableAsync(string studentId,bool excludeEnrolled = true,int? year = null, int? termId = null, int? courseGroupId = null, int? categoryGroupId = null)
     {
         int defaultYear = year ?? _factService.GetCurrentAcademicYear();
         int defaultTermId = termId ?? _factService.GetCurrentSemester();
@@ -710,6 +710,89 @@ public class CourseService : ICourseService
         if (term == null)
         {
             throw new ArgumentException($"Term with ID {defaultTermId} not found");
+        }
+
+        // Build a list of allowed course IDs based on filters
+        HashSet<int>? allowedCourseIds = null;
+        
+        if (courseGroupId.HasValue || categoryGroupId.HasValue)
+        {
+            allowedCourseIds = new HashSet<int>();
+            
+            if (courseGroupId.HasValue)
+            {
+                // Get courses directly from CourseGroup
+                var coursesInGroup = await _context.GroupCourses
+                    .Where(gc => gc.GroupId == courseGroupId.Value && gc.CourseId.HasValue)
+                    .Select(gc => gc.CourseId!.Value)
+                    .ToListAsync();
+                
+                foreach (var courseId in coursesInGroup)
+                {
+                    allowedCourseIds.Add(courseId);
+                }
+                
+                // Also get courses by code (if a code is in the group, all courses with that code should be included)
+                var codesInGroup = await _context.GroupCourses
+                    .Where(gc => gc.GroupId == courseGroupId.Value && gc.CodeId.HasValue)
+                    .Select(gc => gc.CodeId!.Value)
+                    .ToListAsync();
+                
+                if (codesInGroup.Any())
+                {
+                    var coursesByCode = await _context.Courses
+                        .Where(c => codesInGroup.Contains(c.CodeId))
+                        .Select(c => c.Id)
+                        .ToListAsync();
+                    
+                    foreach (var courseId in coursesByCode)
+                    {
+                        allowedCourseIds.Add(courseId);
+                    }
+                }
+            }
+            
+            if (categoryGroupId.HasValue)
+            {
+                // Get all CourseGroups associated with this Category
+                var groupsInCategory = await _context.CategoryGroups
+                    .Where(cg => cg.CategoryId == categoryGroupId.Value && cg.GroupId.HasValue)
+                    .Select(cg => cg.GroupId!.Value)
+                    .ToListAsync();
+                
+                if (groupsInCategory.Any())
+                {
+                    // Get courses from all groups in this category
+                    var coursesInCategoryGroup = await _context.GroupCourses
+                        .Where(gc => groupsInCategory.Contains(gc.GroupId) && gc.CourseId.HasValue)
+                        .Select(gc => gc.CourseId!.Value)
+                        .ToListAsync();
+                    
+                    foreach (var courseId in coursesInCategoryGroup)
+                    {
+                        allowedCourseIds.Add(courseId);
+                    }
+                    
+                    // Also get courses by code
+                    var codesInCategoryGroup = await _context.GroupCourses
+                        .Where(gc => groupsInCategory.Contains(gc.GroupId) && gc.CodeId.HasValue)
+                        .Select(gc => gc.CodeId!.Value)
+                        .ToListAsync();
+                    
+                    if (codesInCategoryGroup.Any())
+                    {
+                        var coursesByCode = await _context.Courses
+                            .Where(c => codesInCategoryGroup.Contains(c.CodeId))
+                            .Select(c => c.Id)
+                            .ToListAsync();
+                        
+                        foreach (var courseId in coursesByCode)
+                        {
+                            allowedCourseIds.Add(courseId);
+                        }
+                    }
+                }
+            }
         }
 
         List<CourseSection> sections = new List<CourseSection>();
@@ -721,9 +804,17 @@ public class CourseService : ICourseService
                 .Select(sc => sc.CourseId)
                 .ToListAsync();
             
-            sections = await _context.CourseSections
+            var query = _context.CourseSections
                 .Where(sc => sc.Year == defaultYear && sc.TermId == defaultTermId)
-                .Where(sc => !enrolledCourseIds.Contains(sc.CourseVersion.CourseId))
+                .Where(sc => !enrolledCourseIds.Contains(sc.CourseVersion.CourseId));
+            
+            // Apply filter if provided
+            if (allowedCourseIds != null && allowedCourseIds.Any())
+            {
+                query = query.Where(sc => allowedCourseIds.Contains(sc.CourseVersion.CourseId));
+            }
+            
+            sections = await query
                 .Include(cs => cs.CourseVersion)
                 .ThenInclude(cv => cv.Course)
                 .ThenInclude(c => c.Code)
@@ -733,8 +824,16 @@ public class CourseService : ICourseService
         }
         else
         {
-            sections = await _context.CourseSections
-                .Where(cs => cs.Year == defaultYear && cs.TermId == defaultTermId)
+            var query = _context.CourseSections
+                .Where(cs => cs.Year == defaultYear && cs.TermId == defaultTermId);
+            
+            // Apply filter if provided
+            if (allowedCourseIds != null && allowedCourseIds.Any())
+            {
+                query = query.Where(cs => allowedCourseIds.Contains(cs.CourseVersion.CourseId));
+            }
+            
+            sections = await query
                 .Include(cs => cs.CourseVersion)
                 .ThenInclude(cv => cv.Course)
                 .ThenInclude(c => c.Code)

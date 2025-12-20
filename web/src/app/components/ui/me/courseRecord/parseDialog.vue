@@ -126,9 +126,6 @@ function parseCourseRecords() {
             <DialogHeader>
                 <DialogTitle>Parse Course Records</DialogTitle>
             </DialogHeader>
-            <pre>
-                {{ records }}
-            </pre>
             <div class="space-y-4 py-4">
                 <div class="space-y-2">
                     <Label>Course Records</Label>

@@ -898,6 +898,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/category-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CategoryGroupResponseDto"][];
+                        "application/json": components["schemas"]["CategoryGroupResponseDto"][];
+                        "text/json": components["schemas"]["CategoryGroupResponseDto"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/timetable": {
         parameters: {
             query?: never;
@@ -910,6 +965,8 @@ export interface paths {
                 query?: {
                     year?: number | string;
                     termId?: number | string;
+                    courseGroupId?: number | string;
+                    categoryGroupId?: number | string;
                 };
                 header?: never;
                 path?: never;
@@ -1002,7 +1059,7 @@ export interface components {
             /** Format: int32 */
             id?: number | string;
             name?: null | string;
-            ruleNode: components["schemas"]["RuleNode"];
+            ruleNode?: null | components["schemas"]["RuleNode"];
             notes?: null | string;
             /** Format: int32 */
             minCredit?: number | string;
@@ -1019,6 +1076,12 @@ export interface components {
             groupId?: number | string;
             groupName?: string;
             groupCourses?: components["schemas"]["GroupCourseDetailDto"][];
+        };
+        CategoryGroupResponseDto: {
+            /** Format: int32 */
+            categoryId?: number | string;
+            categoryName?: string;
+            courseGroups?: components["schemas"]["SimpleCourseGroupDto"][];
         };
         /** @enum {unknown} */
         CategoryType: "Core" | "Elective" | "GE";
@@ -1265,6 +1328,11 @@ export interface components {
             codeId?: number | string;
             codeTag?: string;
             mostRecentVersion?: null | components["schemas"]["CourseVersionResponseDto"];
+        };
+        SimpleCourseGroupDto: {
+            /** Format: int32 */
+            groupId?: number | string;
+            groupName?: string;
         };
         SimpleGroupCourseDto: {
             /** Format: int32 */

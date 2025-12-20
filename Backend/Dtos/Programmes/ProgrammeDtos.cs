@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿﻿using System.Text.Json.Serialization;
 using Backend.Models;
 
 namespace Backend.Dtos.Programmes;
@@ -57,12 +57,12 @@ public class CategoryGroupDetailDto
 public class GroupCourseDetailDto
 {
     public int GroupCourseId { get; set; }
-    
+
     /// <summary>
     /// If this group course is a Course, this will be populated
     /// </summary>
     public SimpleGroupCourseDto? Course { get; set; }
-    
+
     /// <summary>
     /// If this group course is a Code, this will be populated
     /// </summary>
@@ -91,5 +91,18 @@ public class SimpleCodeDto
     public int CodeId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Tag { get; set; } = string.Empty;
+}
+
+public class CategoryGroupResponseDto
+{
+    public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public List<SimpleCourseGroupDto> CourseGroups { get; set; } = new();
+}
+
+public class SimpleCourseGroupDto
+{
+    public int GroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
 }
 

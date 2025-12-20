@@ -1,14 +1,13 @@
 ﻿﻿using Backend.Data;
-using Backend.Models;
 using Backend.Dtos.Programmes;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 
 namespace Backend.Services.Programmes;
 
 public interface IProgrammeService
 {
     Task<UserProgrammeDetailDto?> GetUserProgrammeDetailAsync(string userId);
+    Task<List<CategoryGroupResponseDto>> GetCategoryGroupsAsync(string userId);
 }
 
 
@@ -135,5 +134,52 @@ public class ProgrammeService : IProgrammeService
         }
 
         return dto;
+    }
+
+    /// <summary>
+    /// Get simplified CategoryGroups with their CourseGroups for a user based on their programme
+    /// </summary>
+    public async Task<List<CategoryGroupResponseDto>> GetCategoryGroupsAsync(string userId)
+    {
+        var studentProgramme = await _context.StudentProgrammes
+            .AsNoTracking()
+            .Include(sp => sp.ProgrammeVersion)
+                .ThenInclude(pv => pv.ProgrammeCategories)
+                    .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.CategoryGroups)
+                            .ThenInclude(cg => cg.Group)
+            .FirstOrDefaultAsync(sp => sp.StudentId == userId);
+
+        if (studentProgramme == null)
+            return new List<CategoryGroupResponseDto>();
+
+        var result = new List<CategoryGroupResponseDto>();
+
+        foreach (var progCategory in studentProgramme.ProgrammeVersion.ProgrammeCategories)
+        {
+            var category = progCategory.Category;
+            var categoryDto = new CategoryGroupResponseDto
+            {
+                CategoryId = category.Id,
+                CategoryName = category.Name ?? string.Empty,
+                CourseGroups = new List<SimpleCourseGroupDto>()
+            };
+
+            foreach (var categoryGroup in category.CategoryGroups)
+            {
+                if (categoryGroup.Group != null)
+                {
+                    categoryDto.CourseGroups.Add(new SimpleCourseGroupDto
+                    {
+                        GroupId = categoryGroup.Group.Id,
+                        GroupName = categoryGroup.Group.Name
+                    });
+                }
+            }
+
+            result.Add(categoryDto);
+        }
+
+        return result;
     }
 }

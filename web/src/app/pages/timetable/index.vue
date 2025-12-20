@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import type { components } from "~/API/schema";
+import type { components, paths } from "~/API/schema";
 import { Calendar } from "lucide-vue-next";
 type tableResponse = components['schemas']['TimetableResponseDto']
 // 1 section has many meetings
 type Section = components['schemas']['TimetableSectionDto']
-type Meeting = components['schemas']['TimetableMeetingDto']
 
-const { data: availableItems } = useAPI<tableResponse>('timetable');
+type Query = paths['/api/timetable']['get']['parameters']['query'];
+
+const query = ref<Query>({
+  courseGroupId: undefined,
+});
+
+const { data: availableItems, refresh } = useAPI<tableResponse>('timetable', { query });
+
+const filterDialogOpen = ref(false);
 
 const selectedSections = ref<Section[]>([]);
 
@@ -61,9 +68,7 @@ const totalCredits = computed(() => {
         <div class="text-sm font-medium">
           Total Credits: <span class="text-primary">{{ totalCredits }}</span>
         </div>
-        <div>
-
-        </div>
+        <div />
       </div>
     </header>
 
@@ -72,6 +77,9 @@ const totalCredits = computed(() => {
         <div class="px-3 py-2 bg-muted/50 border-b border-border">
           <h2 class="font-medium text-sm">Courses & Sections</h2>
         </div>
+        <div class="w-full">
+          <Button class=" w-full" @click="filterDialogOpen = true">Filter </Button>
+        </div>
         <div class="flex-1 overflow-hidden">
           <UiTimetableCoursePanel :courses="availableItems?.entries ?? []" :selected-sections="selectedSections"
             @add-section="handleAddSection" @remove-section="handleRemoveSection" />
@@ -79,5 +87,6 @@ const totalCredits = computed(() => {
       </div>
       <UiTimetableGrid :courses="availableItems?.entries ?? []" :selected-sections="selectedSections" />
     </div>
+    <UiTimetableFilter v-model:open="filterDialogOpen" v-model:query="query" :refresh="refresh" />
   </div>
 </template>

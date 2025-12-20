@@ -159,6 +159,31 @@ namespace Backend.Controllers
                 return StatusCode(500, new { message = "Error retrieving user programme detail" });
             }
         }
+
+        [HttpGet("category-groups")]
+        [Authorize]
+        [ProducesResponseType(typeof(List<CategoryGroupResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetCategoryGroups()
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+
+                var categoryGroups = await _programmeService.GetCategoryGroupsAsync(userId);
+                return Ok(categoryGroups);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving category groups");
+                return StatusCode(500, new { message = "Error retrieving category groups" });
+            }
+        }
     }
 }
 
