@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Pgvector;
 
 namespace Backend.Models;
 
@@ -27,8 +28,8 @@ public class Tag
     [Column("description")]
     public string? Description { get; set; }
 
-    [Column("embedding")]
-    public float[]? Embedding { get; set; }
+    [Column("embedding", TypeName = "vector(3072)")]
+    public Vector? Embedding { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

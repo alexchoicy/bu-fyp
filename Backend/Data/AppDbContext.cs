@@ -45,9 +45,15 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Tag> Tags { get; set; }
     public DbSet<CourseTag> CourseTags { get; set; }
 
+    // Policy Sections & Chunks
+    public DbSet<PolicySection> PolicySections { get; set; }
+    public DbSet<PolicySectionChunk> PolicySectionChunks { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        modelBuilder.HasPostgresExtension("vector");
 
         modelBuilder.Entity<CourseVersion>()
             .ComplexCollection(cv => cv.CILOs, b => b.ToJson());
@@ -195,6 +201,12 @@ public class AppDbContext : IdentityDbContext<User>
             .HasOne(ct => ct.Tag)
             .WithMany(t => t.CourseTags)
             .HasForeignKey(ct => ct.TagId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<PolicySectionChunk>()
+            .HasOne(psc => psc.PolicySection)
+            .WithMany(ps => ps.Chunks)
+            .HasForeignKey(psc => psc.PolicySectionKey)
             .OnDelete(DeleteBehavior.Cascade);
 
         List<IdentityRole> roles = new()

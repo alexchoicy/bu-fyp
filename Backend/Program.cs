@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddDbContextPool<AppDbContext>(opt =>
 {
-    opt.UseNpgsql(builder.Configuration["DataBase:ConnectionString"]);
+    opt.UseNpgsql(builder.Configuration["DataBase:ConnectionString"], o => o.UseVector());
 });
 
 // User Identity
@@ -110,15 +110,25 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
     Console.WriteLine("Database Migrated");
-    // Seed Users
+
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await UserSeed.SeedAsync(userManager, roleManager);
-    // Seed Data
-    var aiProviderFactory = scope.ServiceProvider.GetRequiredService<IAIProviderFactory>();
-    await DataSeed.SeedAsync(dbContext, aiProviderFactory);
 
-    Console.WriteLine("Database Seeded");
+    var shouldSeedData = builder.Configuration.GetValue<bool?>("SeedData")
+                         ?? app.Environment.IsDevelopment();
+
+    if (shouldSeedData)
+    {
+        Console.WriteLine("Seeding data...");
+        var aiProviderFactory = scope.ServiceProvider.GetRequiredService<IAIProviderFactory>();
+        await DataSeed.SeedAsync(dbContext, aiProviderFactory);
+        Console.WriteLine("Data seeded");
+    }
+    else
+    {
+        Console.WriteLine("Data seeding skipped");
+    }
 }
 
 app.UseHttpsRedirection();

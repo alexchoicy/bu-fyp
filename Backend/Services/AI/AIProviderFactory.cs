@@ -1,4 +1,5 @@
 using Backend.Models;
+using Pgvector;
 
 namespace Backend.Services.AI;
 
@@ -15,7 +16,10 @@ public interface IAIProvider
     Task<List<TLAs>> ExtractTLAsAsync(string text);
 
     Task<List<AssessmentMethod>> ExtractAssessmentMethodsAsync(string text);
-    Task<float[]> CreateEmbeddingAsync(string text);
+    Task<Vector> CreateEmbeddingAsync(string text);
+    Task<Vector> CreateCourseDomainTagEmbeddingAsync(string courseTitle, string aimsAndObjectives, string courseContent);
+    Task<Vector> CreateCourseSkillsTagEmbeddingAsync(string aimsAndObjectives, List<CILOs> cilos, string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
+    Task<Vector> CreateCourseContentTypesTagEmbeddingAsync(string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
 }
 
 

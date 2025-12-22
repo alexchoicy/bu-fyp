@@ -7,13 +7,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 
 #nullable disable
 
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251211074339_init")]
+    [Migration("20251222084859_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -24,6 +25,7 @@ namespace Backend.Migrations
                 .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Backend.Models.Category", b =>
@@ -544,6 +546,77 @@ namespace Backend.Migrations
                     b.ToTable("medium_of_instructions");
                 });
 
+            modelBuilder.Entity("Backend.Models.PolicySection", b =>
+                {
+                    b.Property<long>("PolicySectionKey")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("policy_section_key");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("PolicySectionKey"));
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_utc");
+
+                    b.Property<string>("DocTitle")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("doc_title");
+
+                    b.Property<string>("Heading")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("heading");
+
+                    b.Property<string>("SectionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("section_id");
+
+                    b.HasKey("PolicySectionKey");
+
+                    b.ToTable("policy_sections");
+                });
+
+            modelBuilder.Entity("Backend.Models.PolicySectionChunk", b =>
+                {
+                    b.Property<long>("ChunkKey")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("chunk_key");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("ChunkKey"));
+
+                    b.Property<int>("ChunkIndex")
+                        .HasColumnType("integer")
+                        .HasColumnName("chunk_index");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_utc");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(3072)")
+                        .HasColumnName("embedding");
+
+                    b.Property<long>("PolicySectionKey")
+                        .HasColumnType("bigint")
+                        .HasColumnName("policy_section_key");
+
+                    b.HasKey("ChunkKey");
+
+                    b.HasIndex("PolicySectionKey");
+
+                    b.ToTable("policy_section_chunks");
+                });
+
             modelBuilder.Entity("Backend.Models.Programme", b =>
                 {
                     b.Property<int>("Id")
@@ -707,8 +780,8 @@ namespace Backend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.PrimitiveCollection<float[]>("Embedding")
-                        .HasColumnType("real[]")
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(3072)")
                         .HasColumnName("embedding");
 
                     b.Property<string>("Name")
@@ -1182,6 +1255,17 @@ namespace Backend.Migrations
                     b.Navigation("Group");
                 });
 
+            modelBuilder.Entity("Backend.Models.PolicySectionChunk", b =>
+                {
+                    b.HasOne("Backend.Models.PolicySection", "PolicySection")
+                        .WithMany("Chunks")
+                        .HasForeignKey("PolicySectionKey")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PolicySection");
+                });
+
             modelBuilder.Entity("Backend.Models.ProgrammeCategory", b =>
                 {
                     b.HasOne("Backend.Models.Category", "Category")
@@ -1373,6 +1457,11 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.MediumOfInstruction", b =>
                 {
                     b.Navigation("CourseVersionMediums");
+                });
+
+            modelBuilder.Entity("Backend.Models.PolicySection", b =>
+                {
+                    b.Navigation("Chunks");
                 });
 
             modelBuilder.Entity("Backend.Models.Programme", b =>

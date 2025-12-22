@@ -5,6 +5,7 @@ using Azure.AI.OpenAI;
 using Backend.Models;
 using OpenAI.Chat;
 using OpenAI.Embeddings;
+using Pgvector;
 
 namespace Backend.Services.AI;
 
@@ -36,7 +37,6 @@ public class OpenAIProvider : IAIProvider
             System: You are an expert at extracting assessment methods from academic course documents.
 
             Your task:
-            - List 3-5 concise bullets outlining your key steps.
             - From input text (e.g., section labeled ""assessmentMethods""), identify all distinct assessment methods.
             - For each method found, create a JSON object with four required fields.
             - Assign a ""category"" by analyzing only the method's name and description, and choose strictly from: ""Examination"", ""Assignment"", ""Project"", ""GroupProject"", ""SoloProject"", ""Presentation"", ""Participation"", or ""Other"". If the project type is specified as group or solo, use ""GroupProject"" or ""SoloProject""; if unspecified, use ""Project"".
@@ -254,18 +254,63 @@ public class OpenAIProvider : IAIProvider
     }
     
     
-    public async Task<float[]> CreateEmbeddingAsync(string text)
+    public async Task<Vector> CreateEmbeddingAsync(string text)
     {
         try
         {
             EmbeddingClient embeddingClient = _client.GetEmbeddingClient("text-embedding-3-large");
             OpenAIEmbedding embedding = await embeddingClient.GenerateEmbeddingAsync(text);
             ReadOnlyMemory<float> vector = embedding.ToFloats();
-            return vector.ToArray();
+            return new Vector(vector);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Error occurred while creating embedding");
+            throw;
+        }
+    }
+
+    public async Task<Vector> CreateCourseDomainTagEmbeddingAsync(string courseTitle, string aimsAndObjectives, string courseContent)
+    {
+        try
+        {
+            string formattedText = EmbeddingHelper.FormatCourseDataForDomainTagEmbedding(courseTitle, aimsAndObjectives, courseContent);
+            
+            return await CreateEmbeddingAsync(formattedText);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error occurred while creating course embedding");
+            throw;
+        }
+    }
+
+    public async Task<Vector> CreateCourseSkillsTagEmbeddingAsync(string aimsAndObjectives, List<CILOs> cilos, string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods)
+    {
+        try
+        {
+            string formattedText = EmbeddingHelper.FormatCourseDataForSkillsTagEmbedding(aimsAndObjectives, cilos, courseContent, tlas, assessmentMethods);
+            
+            return await CreateEmbeddingAsync(formattedText);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error occurred while creating course skills tag embedding");
+            throw;
+        }
+    }
+
+    public async Task<Vector> CreateCourseContentTypesTagEmbeddingAsync(string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods)
+    {
+        try
+        {
+            string formattedText = EmbeddingHelper.FormatCourseDataForContentTypesTagEmbedding(courseContent, tlas, assessmentMethods);
+            
+            return await CreateEmbeddingAsync(formattedText);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error occurred while creating course content types tag embedding");
             throw;
         }
     }

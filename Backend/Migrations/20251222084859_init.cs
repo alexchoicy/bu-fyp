@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 
 #nullable disable
 
@@ -14,6 +15,9 @@ namespace Backend.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:vector", ",,");
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -126,6 +130,22 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "policy_sections",
+                columns: table => new
+                {
+                    policy_section_key = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    section_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    heading = table.Column<string>(type: "text", nullable: false),
+                    doc_title = table.Column<string>(type: "text", nullable: false),
+                    created_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_policy_sections", x => x.policy_section_key);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "programmes",
                 columns: table => new
                 {
@@ -148,7 +168,7 @@ namespace Backend.Migrations
                     name = table.Column<string>(type: "text", nullable: false),
                     tag_type = table.Column<int>(type: "integer", nullable: false),
                     description = table.Column<string>(type: "text", nullable: true),
-                    embedding = table.Column<float[]>(type: "real[]", nullable: true),
+                    embedding = table.Column<Vector>(type: "vector(3072)", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -321,6 +341,29 @@ namespace Backend.Migrations
                         column: x => x.group_id,
                         principalTable: "course_groups",
                         principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "policy_section_chunks",
+                columns: table => new
+                {
+                    chunk_key = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    policy_section_key = table.Column<long>(type: "bigint", nullable: false),
+                    chunk_index = table.Column<int>(type: "integer", nullable: false),
+                    content = table.Column<string>(type: "text", nullable: false),
+                    embedding = table.Column<Vector>(type: "vector(3072)", nullable: true),
+                    created_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_policy_section_chunks", x => x.chunk_key);
+                    table.ForeignKey(
+                        name: "FK_policy_section_chunks_policy_sections_policy_section_key",
+                        column: x => x.policy_section_key,
+                        principalTable: "policy_sections",
+                        principalColumn: "policy_section_key",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -849,6 +892,11 @@ namespace Backend.Migrations
                 column: "group_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_policy_section_chunks_policy_section_key",
+                table: "policy_section_chunks",
+                column: "policy_section_key");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_programme_categories_category_id",
                 table: "programme_categories",
                 column: "category_id");
@@ -920,6 +968,9 @@ namespace Backend.Migrations
                 name: "group_courses");
 
             migrationBuilder.DropTable(
+                name: "policy_section_chunks");
+
+            migrationBuilder.DropTable(
                 name: "programme_categories");
 
             migrationBuilder.DropTable(
@@ -945,6 +996,9 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "course_groups");
+
+            migrationBuilder.DropTable(
+                name: "policy_sections");
 
             migrationBuilder.DropTable(
                 name: "categories");
