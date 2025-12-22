@@ -20,7 +20,7 @@ public class CategoryCompletionStatus
     public RuleNode? RuleNode { get; set; }
     public string? Notes { get; set; }
     public int MinCredit { get; set; } = 0;
-    public int Priority { get; set; } = 0;   
+    public int Priority { get; set; } = 0;
     public IList<ItemCompletionStatus> Items { get; set; } = new List<ItemCompletionStatus>();
     public bool IsCompleted { get; set; }
     public int UsedCredits { get; set; }
@@ -33,7 +33,7 @@ public interface IEvaluateRule
 }
 public class EvaluateRule : IEvaluateRule
 {
-    
+
     private readonly AppDbContext _context;
 
     public EvaluateRule(AppDbContext context)
@@ -54,19 +54,19 @@ public class EvaluateRule : IEvaluateRule
 
         if (studentProgramme == null)
             return new List<CategoryCompletionStatus>();
-        
+
         var programmeCategories = studentProgramme.ProgrammeVersion.ProgrammeCategories
             .OrderByDescending(pc => pc.Category.Priority)
             .ToList();
-        
+
         var studentCourses = await _context.StudentCourses
             .AsNoTracking()
             .Include(sc => sc.Course)
             .Where(sc => sc.StudentId == userId)
             .ToListAsync();
-        
+
         var usedCourseIdsAcrossCategories = new HashSet<int>();
-        
+
         var results = new List<CategoryCompletionStatus>();
         foreach (var programmeCategory in programmeCategories)
         {
@@ -76,13 +76,13 @@ public class EvaluateRule : IEvaluateRule
                 .Select(cg => cg.GroupId)
                 .Distinct()
                 .ToList();
-            
+
             //groupCourse has CodeId and CourseId
             var groupCourses = await _context.GroupCourses
                 .AsNoTracking()
                 .Where(gc => groupIds.Contains(gc.GroupId))
                 .ToListAsync();
-            
+
             //filter used by prev categories
             var availableStudentCourses = studentCourses
                 .Where(sc => !usedCourseIdsAcrossCategories.Contains(sc.CourseId))
@@ -114,7 +114,7 @@ public class EvaluateRule : IEvaluateRule
             groupCourses,
             studentCourses,
             usedStudentCourseIds);
-        
+
         bool rulesSatisfied = evalResult.IsSatisfied;
         //throw everything to frontend and do things there Zzzzz
         return new CategoryCompletionStatus
@@ -132,7 +132,7 @@ public class EvaluateRule : IEvaluateRule
             UsedCourseIds = usedStudentCourseIds.ToList()
         };
     }
-    
+
     public class RuleEvalResult
     {
         public bool IsSatisfied { get; set; }
@@ -156,7 +156,7 @@ public class EvaluateRule : IEvaluateRule
         {
             return EvaluateGroupRuleNode(groupNode, allGroupCourses, allStudentCourses, usedStudentCourseIds);
         }
-        
+
         if (node is FreeElectiveRuleNode freeElectiveNode)
         {
             return EvaluateFreeElectiveRuleNode(category_minCredit, freeElectiveNode, allGroupCourses, allStudentCourses, usedStudentCourseIds);
@@ -188,7 +188,7 @@ public class EvaluateRule : IEvaluateRule
 
             foreach (var child in ruleNode.Children)
             {
-                var childResult = EvaluateRuleNode(child,category_minCredit, allGroupCourses, allStudentCourses, usedStudentCourseIds);
+                var childResult = EvaluateRuleNode(child, category_minCredit, allGroupCourses, allStudentCourses, usedStudentCourseIds);
 
                 result.Items.AddRange(childResult.Items);
                 result.UsedCredits += childResult.UsedCredits;
@@ -204,9 +204,9 @@ public class EvaluateRule : IEvaluateRule
             foreach (var child in ruleNode.Children)
             {
                 var tempUsedStudentCourseIds = new HashSet<int>(usedStudentCourseIds);
-                
-                var childResult = EvaluateRuleNode(child,category_minCredit, allGroupCourses, allStudentCourses, tempUsedStudentCourseIds);
-                
+
+                var childResult = EvaluateRuleNode(child, category_minCredit, allGroupCourses, allStudentCourses, tempUsedStudentCourseIds);
+
                 if (childResult.IsSatisfied)
                 {
                     usedStudentCourseIds.Clear();
@@ -215,6 +215,13 @@ public class EvaluateRule : IEvaluateRule
                     result.Items.AddRange(childResult.Items);
                     result.UsedCredits += childResult.UsedCredits;
                     return result;
+                }
+
+                if (child == ruleNode.Children.Last())
+                {
+                    // So I want to retrun the last evaluated result even if not satisfied
+                    result.Items.AddRange(childResult.Items);
+                    result.UsedCredits += childResult.UsedCredits;
                 }
             }
 
@@ -229,7 +236,7 @@ public class EvaluateRule : IEvaluateRule
         public GroupCourse GroupCourse { get; set; } = null!;
         public List<StudentCourse> Matches { get; set; } = new();
     }
-    
+
     // Check if a course matches a group course's CourseId or CodeId
     private bool MatchesGroupCourse(GroupCourse gc, StudentCourse sc)
     {
@@ -241,7 +248,7 @@ public class EvaluateRule : IEvaluateRule
 
         return false;
     }
-    
+
     private RuleEvalResult EvaluateGroupRuleNode(
         GroupRuleNode groupNode,
         IList<GroupCourse> allGroupCourses,
@@ -253,7 +260,7 @@ public class EvaluateRule : IEvaluateRule
         var groupEntries = allGroupCourses
             .Where(g => g.GroupId == groupNode.GroupID)
             .ToList();
-        
+
         var matchesByGroupCourse = groupEntries
             .Select(gc => new GroupCourseMatch
             {
@@ -261,7 +268,7 @@ public class EvaluateRule : IEvaluateRule
                 Matches = allStudentCourses
                     .Where(sc =>
                         !usedStudentCourseIds.Contains(sc.CourseId) &&
-                        GradeUtility.IsPassing(sc.Grade ?? Grade.NA) &&
+                        (GradeUtility.IsPassing(sc.Grade ?? Grade.NA) || sc.Status == StudentCourseStatus.Exemption) &&
                         MatchesGroupCourse(gc, sc))
                     .ToList()
             })
@@ -283,12 +290,13 @@ public class EvaluateRule : IEvaluateRule
         }
         return result;
     }
-    
+
     private void EvaluateAllOf(
         IList<GroupCourseMatch> matchesByGroupCourse,
         RuleEvalResult result,
         HashSet<int> usedStudentCourseIds)
     {
+        // It will return true if the group has no courses to match, but it is fine right now.
         bool allSatisfied = true;
 
         foreach (var entry in matchesByGroupCourse)
@@ -323,10 +331,9 @@ public class EvaluateRule : IEvaluateRule
 
             result.Items.Add(status);
         }
-
         result.IsSatisfied = allSatisfied;
     }
-    
+
     private void EvaluateOneOf(
         IList<GroupCourseMatch> matchesByGroupCourse,
         RuleEvalResult result,
@@ -371,7 +378,7 @@ public class EvaluateRule : IEvaluateRule
 
         result.IsSatisfied = anySatisfied;
     }
-    
+
     private RuleEvalResult EvaluateFreeElectiveRuleNode(
         int Category_minCredit,
         FreeElectiveRuleNode freeElectiveNode,
@@ -384,7 +391,7 @@ public class EvaluateRule : IEvaluateRule
         var groupEntries = allGroupCourses
             .Where(g => g.GroupId == freeElectiveNode.GroupID)
             .ToList();
-        
+
         var matchesByGroupCourse = groupEntries
             .Select(gc => new GroupCourseMatch
             {
@@ -392,12 +399,12 @@ public class EvaluateRule : IEvaluateRule
                 Matches = allStudentCourses
                     .Where(sc =>
                         !usedStudentCourseIds.Contains(sc.CourseId) &&
-                        GradeUtility.IsPassing(sc.Grade ?? Grade.NA) &&
+                        (GradeUtility.IsPassing(sc.Grade ?? Grade.NA) || sc.Status == StudentCourseStatus.Exemption) &&
                         MatchesGroupCourse(gc, sc))
                     .ToList()
             })
             .ToList();
-        
+
         int totalCredits = 0;
         foreach (var entry in matchesByGroupCourse)
         {
@@ -429,7 +436,7 @@ public class EvaluateRule : IEvaluateRule
             result.Items.Add(status);
         }
 
-        if (totalCredits >= Category_minCredit) 
+        if (totalCredits >= Category_minCredit)
         {
             result.IsSatisfied = true;
         }
@@ -437,9 +444,9 @@ public class EvaluateRule : IEvaluateRule
         {
             result.IsSatisfied = false;
         }
-        return  result;
+        return result;
     }
-    
-    
+
+
 }
 
