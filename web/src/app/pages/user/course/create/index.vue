@@ -16,11 +16,21 @@ watch(records, (newRecords) => {
 
 const courseById = (id?: number) => (courses.value ?? []).find(c => c.id === id);
 
+function submitRecords() {
+    useNuxtApp().$api('/me/courses', {
+        method: 'POST',
+        body: records.value,
+    }).then(() => {
+        records.value = [];
+    }).finally(() => {
+        navigateTo('/user/course');
+    });
+}
+
 </script>
 
 <template>
     <div class="flex flex-1 flex-col gap-6 p-6">
-
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight">Create Academic Records</h1>
@@ -63,6 +73,9 @@ const courseById = (id?: number) => (courses.value ?? []).find(c => c.id === id)
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <Button :disabled="records.length === 0" @click="submitRecords()">Submit Records</Button>
         </div>
     </div>
 </template>

@@ -70,23 +70,52 @@ function parseCourseRecords() {
                 continue;
             }
             let status: StudentCourseStatuses;
+            let grade: Grade | null = null;
+
+            //there is better way to do this but later
             switch (gradeCell.textContent.trim()) {
                 case "A":
+                    grade = 'A';
+                    status = 'Completed';
+                    break;
                 case "A-":
+                    grade = 'AMinus';
+                    status = 'Completed';
+                    break;
                 case "B+":
+                    grade = 'BPlus';
+                    status = 'Completed';
+                    break;
                 case "B":
+                    grade = 'B';
+                    status = 'Completed';
+                    break;
                 case "B-":
+                    grade = 'BMinus';
+                    status = 'Completed';
+                    break;
                 case "C+":
+                    grade = 'CPlus';
+                    status = 'Completed';
+                    break;
                 case "C":
-                case "D+":
+                    grade = 'C';
+                    status = 'Completed';
+                    break;
                 case "D":
+                    grade = 'D';
+                    status = 'Completed';
+                    break;
                 case "F":
+                    grade = 'F';
                     status = 'Completed';
                     break;
                 case "S":
+                    grade = "S"
                     status = 'Completed';
                     break;
                 case "U":
+                    grade = "U"
                     status = 'Failed';
                     break;
                 case "**":
@@ -104,9 +133,9 @@ function parseCourseRecords() {
             if (course) {
                 records.value.push({
                     courseId: course.id,
-                    term: currentParseTermGroup.value.term,
-                    grade: gradeCell.textContent.trim() === "**" ? null : gradeCell.textContent.trim() as Grade,
-                    year: currentParseTermGroup.value.year,
+                    termId: currentParseTermGroup.value.term,
+                    grade: gradeCell.textContent.trim() === "**" ? null : grade,
+                    academicYear: currentParseTermGroup.value.year,
                     status: status,
                 });
             }

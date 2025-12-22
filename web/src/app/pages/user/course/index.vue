@@ -8,7 +8,12 @@ const enrolledCourses = computed(() =>
 )
 
 const completedCourses = computed(() =>
-  courses.value?.filter(course => course.status === "Completed" || course.status === "Withdrawn") || []
+  courses.value
+    ?.filter(course => ['Completed', 'Withdrawn', 'Exemption'].includes(course.status))
+    .sort((a, b) => {
+      const priority: Record<string, number> = { Completed: 0, Withdrawn: 1, Exemption: 2 }
+      return (priority[a.status] ?? 99) - (priority[b.status] ?? 99)
+    }) || []
 )
 
 const plannedCourses = computed(() =>
