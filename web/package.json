@@ -15,6 +15,8 @@
     "@nuxt/fonts": "0.12.1",
     "@nuxt/hints": "1.0.0-alpha.3",
     "@tanstack/vue-form": "^1.27.1",
+    "@unovis/ts": "^1.6.2",
+    "@unovis/vue": "^1.6.2",
     "@vueuse/core": "^14.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
