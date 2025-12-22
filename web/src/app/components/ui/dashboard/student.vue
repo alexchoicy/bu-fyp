@@ -75,7 +75,9 @@ const percentage = computed(() => (dashboardData?.totalCreditsCompleted ?? 0) / 
                     <CardDescription>Your academic performance over time</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <!-- <GpaLine /> -->
+                    <ClientOnly>
+                        <UiDashboardGpaLine :gpa-data="dashboardData?.semesterGpas ?? []" />
+                    </ClientOnly>
                 </CardContent>
             </Card>
             <Card>

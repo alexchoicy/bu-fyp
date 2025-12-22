@@ -155,7 +155,7 @@ async function submitForm() {
     alert("Please fill in all required fields");
     return;
   }
-
+  isSubmitting.value = true;
   const $api = useNuxtApp().$api;
   let newID: number | undefined;
   try {
@@ -167,8 +167,6 @@ async function submitForm() {
   } catch (error) {
     console.error("Failed to create course:", error);
     alert("Failed to create course");
-  } finally {
-    isSubmitting.value = false;
   }
 
   if (!newID) {
