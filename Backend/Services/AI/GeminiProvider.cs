@@ -1,11 +1,22 @@
 using System.Collections.Generic;
+using Backend.Data;
 using Backend.Models;
+using OpenAI.Chat;
 using Pgvector;
 
 namespace Backend.Services.AI;
 
 public class GeminiProvider : IAIProvider
 {
+    private readonly AppDbContext _dbContext;
+    private readonly ILogger<GeminiProvider> _logger;
+
+    public GeminiProvider(AppDbContext dbContext, ILogger<GeminiProvider> logger)
+    {
+        _dbContext = dbContext;
+        _logger = logger;
+    }
+
     public Task<List<AssessmentMethod>> ExtractAssessmentMethodsAsync(string text)
     {
         throw new NotImplementedException();
@@ -82,6 +93,11 @@ public class GeminiProvider : IAIProvider
     }
 
     public Task<List<TLAs>> ExtractTLAsAsync(string text)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory)
     {
         throw new NotImplementedException();
     }

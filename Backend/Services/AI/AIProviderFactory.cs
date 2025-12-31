@@ -1,4 +1,5 @@
 using Backend.Models;
+using OpenAI.Chat;
 using Pgvector;
 
 namespace Backend.Services.AI;
@@ -20,12 +21,14 @@ public interface IAIProvider
     Task<Vector> CreateCourseDomainTagEmbeddingAsync(string courseTitle, string aimsAndObjectives, string courseContent);
     Task<Vector> CreateCourseSkillsTagEmbeddingAsync(string aimsAndObjectives, List<CILOs> cilos, string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
     Task<Vector> CreateCourseContentTypesTagEmbeddingAsync(string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
+    Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory);
 }
 
 
 public interface IAIProviderFactory
 {
     IAIProvider GetProvider(AIProviderType providerType);
+    IAIProvider GetDefaultProvider();
 }
 
 public class AIProviderFactory : IAIProviderFactory

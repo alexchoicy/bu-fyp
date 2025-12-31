@@ -49,6 +49,10 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<PolicySection> PolicySections { get; set; }
     public DbSet<PolicySectionChunk> PolicySectionChunks { get; set; }
 
+    // Chat
+    public DbSet<Conversation> Conversations { get; set; }
+    public DbSet<Message> Messages { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -206,7 +210,19 @@ public class AppDbContext : IdentityDbContext<User>
         modelBuilder.Entity<PolicySectionChunk>()
             .HasOne(psc => psc.PolicySection)
             .WithMany(ps => ps.Chunks)
-            .HasForeignKey(psc => psc.PolicySectionKey)
+            .HasForeignKey(ps => ps.PolicySectionKey)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Conversation>()
+            .HasMany(c => c.Messages)
+            .WithOne(m => m.Conversation)
+            .HasForeignKey(m => m.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         List<IdentityRole> roles = new()
