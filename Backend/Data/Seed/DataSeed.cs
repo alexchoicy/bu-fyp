@@ -1,16 +1,25 @@
 using Backend.Models;
+using Backend.Services.AI;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data.Seed;
 
 public class DataSeed
 {
-    public static async Task SeedAsync(AppDbContext context)
+    public static async Task SeedAsync(AppDbContext context, IAIProviderFactory? aiProviderFactory = null)
     {
         await SeedTermsAsync(context);
         await SeedCodesAsync(context);
         await SeedDepartmentsAsync(context);
         await SeedMediumOfInstructionsAsync(context);
+
+        // This seed will use SQL bulk input after first embedding generation
+        // await TagSeed.SeedAsync(context, aiProviderFactory);
+        // await PolicySeed.SeedAsync(context, aiProviderFactory);
+
+        // await CourseSeed.SeedAsync(context, aiProviderFactory);
+        // await SectionSeed.SeedAsync(context);
+        await ProgrammeSeed.SeedAsync(context);
     }
 
     private static async Task SeedTermsAsync(AppDbContext context)
