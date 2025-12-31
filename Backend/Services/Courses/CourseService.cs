@@ -563,8 +563,7 @@ public class CourseService : ICourseService
                 var groupCourse = new GroupCourse
                 {
                     GroupId = gid,
-                    Course = course,
-                    CodeId = createCourseDto.CodeId
+                    Course = course
                 };
                 _context.GroupCourses.Add(groupCourse);
             }

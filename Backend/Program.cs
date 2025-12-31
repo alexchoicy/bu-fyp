@@ -7,6 +7,7 @@ using Backend.Services.Courses;
 using Backend.Services.Facts;
 using Backend.Services.Programmes;
 using Backend.Services.User;
+using Backend.Services.Chat;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -81,9 +82,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddSingleton<OpenAIProvider>();
-builder.Services.AddSingleton<GeminiProvider>();
-builder.Services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
+builder.Services.AddScoped<OpenAIProvider>();
+builder.Services.AddScoped<GeminiProvider>();
+builder.Services.AddScoped<IAIProviderFactory, AIProviderFactory>();
+builder.Services.AddScoped<ChatProvider>();
 
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IFactService, FactService>();
@@ -134,6 +136,8 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
+
+app.UseWebSockets();
 
 app.UseAuthentication();
 app.UseAuthorization();
