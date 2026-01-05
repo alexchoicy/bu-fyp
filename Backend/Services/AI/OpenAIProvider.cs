@@ -26,10 +26,18 @@ public class OpenAIProvider : IAIProvider
                           ?? throw new ArgumentNullException("AzureOpenAI:Endpoint configuration is missing");
         string apiKey = configuration["AzureOpenAI:ApiKey"]
                         ?? throw new ArgumentNullException("AzureOpenAI:ApiKey configuration is missing");
-        _deploymentName = "gpt-5-mini";
 
         var httpClient = new HttpClient(new LoggingHandler(logger));
-        var options = new AzureOpenAIClientOptions(AzureOpenAIClientOptions.ServiceVersion.V2024_12_01_Preview)
+        
+        // _deploymentName = "gpt-5-mini";
+        //only school API use this
+        // var options = new AzureOpenAIClientOptions(AzureOpenAIClientOptions.ServiceVersion.V2024_12_01_Preview)
+        // {
+        //     Transport = new HttpClientPipelineTransport(httpClient)
+        // };
+
+        _deploymentName = "gpt-5-nano";
+        var options = new AzureOpenAIClientOptions()
         {
             Transport = new HttpClientPipelineTransport(httpClient)
         };
@@ -273,9 +281,22 @@ public class OpenAIProvider : IAIProvider
                     }
                     case ChatFinishReason.ToolCalls:
                     {
+                        _logger.LogInformation(
+                            "Model requested {ToolCount} tool call(s)",
+                            completion.ToolCalls.Count
+                        );
+                        
                         messages.Add(new AssistantChatMessage(completion));
                         foreach (ChatToolCall toolCall in completion.ToolCalls)
                         {
+                            
+                            _logger.LogInformation(
+                                "Tool requested: {ToolName}, ToolCallId: {ToolCallId}, Arguments: {Arguments}",
+                                toolCall.FunctionName,
+                                toolCall.Id,
+                                toolCall.FunctionArguments
+                            );
+                            
                             switch (toolCall.FunctionName)
                             {
                                 case nameof(OpenAIFunctions.DatabaseQueries.GetCourseByCodeAndNumber):
@@ -327,11 +348,6 @@ public class OpenAIProvider : IAIProvider
                         throw new NotImplementedException("Deprecated in favor of tool calls.");
                     default:
                         throw new NotImplementedException(completion.FinishReason.ToString());
-                }
-
-                if (completion.FinishReason != ChatFinishReason.ToolCalls)
-                {
-                    messages.Add(new AssistantChatMessage(completion));
                 }
                 
             } while (requiresAction);
