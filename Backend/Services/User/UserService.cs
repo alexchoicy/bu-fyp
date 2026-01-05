@@ -104,8 +104,11 @@ public class UserService : IUserService
             .Include(sc => sc.Term)
             .ToListAsync();
         
-        var completedCourses = studentCourses.Where(sc => sc.Status == StudentCourseStatus.Completed).ToList();
-
+        var completedCourses = studentCourses.Where(sc => 
+            sc.Status == StudentCourseStatus.Completed || 
+            sc.Status == StudentCourseStatus.Exemption || 
+            sc.Status == StudentCourseStatus.Withdrawn).ToList();
+        
         var studentProgrammes = await _context.Set<StudentProgramme>()
             .Where(sp => sp.StudentId == userId)
             .Include(sp => sp.ProgrammeVersion.Programme)
