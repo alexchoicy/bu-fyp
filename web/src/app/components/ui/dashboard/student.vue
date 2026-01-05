@@ -2,17 +2,16 @@
 import type { components } from '~/API/schema';
 import { BookOpen } from 'lucide-vue-next';
 const { data: dashboardData } = useAPI<components['schemas']['AcademicProgressDto']>('/me/academic-progress');
+const { user } = useAuth();
 
 const { data: facts } = useAPI<components['schemas']['CurrentFactsResponseDto']>('facts');
-
-const percentage = computed(() => (dashboardData?.totalCreditsCompleted ?? 0) / (dashboardData?.totalCreditsRequired ?? 1) * 100);
 </script>
 
 <template>
     <div class="space-y-6 p-4 container mx-auto">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-balance">Welcome back!</h1>
+                <h1 class="text-3xl font-bold text-balance">Welcome back! {{ user?.name }}</h1>
             </div>
             <div class="text-right">
                 <p class="text-sm text-muted-foreground">Current Semester</p>
@@ -50,7 +49,7 @@ const percentage = computed(() => (dashboardData?.totalCreditsCompleted ?? 0) / 
                     <CardTitle class="text-sm font-medium">Degree Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div class="text-2xl font-bold">{{ percentage.toFixed(2) }}%</div>
+                    <div class="text-2xl font-bold">{{ dashboardData?.completionPercentage.toFixed(2) }}%</div>
                     <Progress :model-value="dashboardData?.completionPercentage ?? 0" class="mt-2" />
                 </CardContent>
             </Card>
