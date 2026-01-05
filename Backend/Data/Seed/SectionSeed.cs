@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data.Seed;
 
+//Old section seed not used now
 public class SectionSeed
 {
     public static async Task SeedAsync(AppDbContext context)

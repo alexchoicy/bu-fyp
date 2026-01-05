@@ -124,7 +124,7 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine("Seeding data...");
         var aiProviderFactory = scope.ServiceProvider.GetRequiredService<IAIProviderFactory>();
-        await DataSeed.SeedAsync(dbContext, aiProviderFactory);
+        await DataSeed.SeedAsync(dbContext, userManager, aiProviderFactory);
         Console.WriteLine("Data seeded");
     }
     else
