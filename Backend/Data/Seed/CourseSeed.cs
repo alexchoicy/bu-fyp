@@ -7,35 +7,35 @@ namespace Backend.Data.Seed;
 
 public class CourseSeed
 {
-    public static async Task SeedAsync(AppDbContext context,UserManager<User> userManager, IAIProviderFactory? aiProviderFactory = null)
+    public static async Task SeedAsync(AppDbContext context, UserManager<User> userManager, IAIProviderFactory? aiProviderFactory = null)
     {
         if (await context.Courses.AnyAsync())
             return;
 
         await seedCourses(context, userManager);
     }
-    
+
     public static async Task<CourseVersion> comp1005Gen(AppDbContext context, Code compCode, Term semester1)
-{
-    var comp1005 = new Course
     {
-        Name = "Essence of Computing",
-        CourseNumber = "1005",
-        CodeId = compCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var comp1005 = new Course
+        {
+            Name = "Essence of Computing",
+            CourseNumber = "1005",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(comp1005);
+        await context.Courses.AddAsync(comp1005);
 
-    var comp1005Version = new CourseVersion
-    {
-        Course = comp1005,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var comp1005Version = new CourseVersion
+        {
+            Course = comp1005,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -68,7 +68,7 @@ public class CourseSeed
                 Description = "Build up and apply analytical thinking in the context of ICT and programming"
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -86,13 +86,13 @@ public class CourseSeed
                 Description = "Students will work on programming exercises and assignments to enhance what they have learnt."
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(comp1005Version);
+        await context.CourseVersions.AddAsync(comp1005Version);
 
-    var comp1005Assessments = new List<CourseAssessment>
+        var comp1005Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -124,34 +124,34 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(comp1005Assessments);
+        await context.CourseAssessments.AddRangeAsync(comp1005Assessments);
 
-    await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-    return comp1005Version;
-}
+        return comp1005Version;
+    }
 
     public static async Task<CourseVersion> math1025Gen(AppDbContext context, Code mathCode, Term semester1)
-{
-    var math1025 = new Course
     {
-        Name = "Understanding Mathematics and Statistics",
-        CourseNumber = "1025",
-        CodeId = mathCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var math1025 = new Course
+        {
+            Name = "Understanding Mathematics and Statistics",
+            CourseNumber = "1025",
+            CodeId = mathCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(math1025);
+        await context.Courses.AddAsync(math1025);
 
-    var math1025Version = new CourseVersion
-    {
-        Course = math1025,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var math1025Version = new CourseVersion
+        {
+            Course = math1025,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -174,7 +174,7 @@ public class CourseSeed
                 Description = "Construct a perspective regarding the understanding of math/stat."
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -192,13 +192,13 @@ public class CourseSeed
                 Description = "Students are required to work on different assigned tasks after class and are encouraged to have further discussion with the instructor."
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(math1025Version);
+        await context.CourseVersions.AddAsync(math1025Version);
 
-    var math1025Assessments = new List<CourseAssessment>
+        var math1025Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -237,35 +237,35 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(math1025Assessments);
+        await context.CourseAssessments.AddRangeAsync(math1025Assessments);
 
-    await context.SaveChangesAsync();
-    
-    return math1025Version;
-}
+        await context.SaveChangesAsync();
+
+        return math1025Version;
+    }
 
     // used to show anti-req of 4027, //TODO seed it to student's record 
     public static async Task<CourseVersion> math3836Gen(AppDbContext context, Code mathCode, Term semester1)
-{
-    var math3836 = new Course
     {
-        Name = "Data Mining",
-        CourseNumber = "3836",
-        CodeId = mathCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var math3836 = new Course
+        {
+            Name = "Data Mining",
+            CourseNumber = "3836",
+            CodeId = mathCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(math3836);
+        await context.Courses.AddAsync(math3836);
 
-    var math3836Version = new CourseVersion
-    {
-        Course = math3836,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var math3836Version = new CourseVersion
+        {
+            Course = math3836,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -298,7 +298,7 @@ public class CourseSeed
                 Description = "Solve problems logically, analytically, critically and creatively"
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -316,13 +316,13 @@ public class CourseSeed
                 Description = "A real-life case study of data mining application will be conducted using knowledge gained both during class, as well as from other findings of student(s)'s own research."
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(math3836Version);
+        await context.CourseVersions.AddAsync(math3836Version);
 
-    var math3836Assessments = new List<CourseAssessment>
+        var math3836Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -347,34 +347,34 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(math3836Assessments);
+        await context.CourseAssessments.AddRangeAsync(math3836Assessments);
 
-    await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-    return math3836Version;
-}
-    
+        return math3836Version;
+    }
+
     public static async Task<CourseVersion> comp4027Gen(AppDbContext context, Code compCode, Term semester1)
-{
-    var comp4027 = new Course
     {
-        Name = "Data Mining and Knowledge Discovery",
-        CourseNumber = "4027",
-        CodeId = compCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var comp4027 = new Course
+        {
+            Name = "Data Mining and Knowledge Discovery",
+            CourseNumber = "4027",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(comp4027);
+        await context.Courses.AddAsync(comp4027);
 
-    var comp4027Version = new CourseVersion
-    {
-        Course = comp4027,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var comp4027Version = new CourseVersion
+        {
+            Course = comp4027,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -407,7 +407,7 @@ public class CourseSeed
                 Description = "Work as a team in solving challenging data mining problems"
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -430,13 +430,13 @@ public class CourseSeed
                 Description = "Student will achieve the outcomes via group project on solving real world data mining problem"
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(comp4027Version);
+        await context.CourseVersions.AddAsync(comp4027Version);
 
-    var comp4027Assessments = new List<CourseAssessment>
+        var comp4027Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -454,34 +454,34 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(comp4027Assessments);
+        await context.CourseAssessments.AddRangeAsync(comp4027Assessments);
 
-    await context.SaveChangesAsync();
-    
-    return comp4027Version;
-}
+        await context.SaveChangesAsync();
+
+        return comp4027Version;
+    }
 
     public static async Task<CourseVersion> comp4146Gen(AppDbContext context, Code compCode, Term semester1)
-{
-    var comp4146 = new Course
     {
-        Name = "Prompt Engineering for Generative AI",
-        CourseNumber = "4146",
-        CodeId = compCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var comp4146 = new Course
+        {
+            Name = "Prompt Engineering for Generative AI",
+            CourseNumber = "4146",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(comp4146);
+        await context.Courses.AddAsync(comp4146);
 
-    var comp4146Version = new CourseVersion
-    {
-        Course = comp4146,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var comp4146Version = new CourseVersion
+        {
+            Course = comp4146,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -514,7 +514,7 @@ public class CourseSeed
                 Description = "Analyze the ethical considerations and limitations of prompt engineering in real-world applications."
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -532,13 +532,13 @@ public class CourseSeed
                 Description = "Students will work on written assignments to consolidate and apply what they have learned about prompt engineering and generative AI applications."
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(comp4146Version);
+        await context.CourseVersions.AddAsync(comp4146Version);
 
-    var comp4146Assessments = new List<CourseAssessment>
+        var comp4146Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -563,34 +563,34 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(comp4146Assessments);
+        await context.CourseAssessments.AddRangeAsync(comp4146Assessments);
 
-    await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-    return comp4146Version;
-}
+        return comp4146Version;
+    }
 
     public static async Task<CourseVersion> comp4046Gen(AppDbContext context, Code compCode, Term semester1)
-{
-    var comp4046 = new Course
     {
-        Name = "Information Systems Control and Auditing",
-        CourseNumber = "4046",
-        CodeId = compCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var comp4046 = new Course
+        {
+            Name = "Information Systems Control and Auditing",
+            CourseNumber = "4046",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(comp4046);
+        await context.Courses.AddAsync(comp4046);
 
-    var comp4046Version = new CourseVersion
-    {
-        Course = comp4046,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var comp4046Version = new CourseVersion
+        {
+            Course = comp4046,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs
             {
@@ -623,7 +623,7 @@ public class CourseSeed
                 Description = "Assess the security of computer systems in terms of how well they are protected from computer security threats and integrate computer security mechanisms to protect computer systems from security threats"
             }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs
             {
@@ -641,13 +641,13 @@ public class CourseSeed
                 Description = "Students will work on exercises and assignments to consolidate their understanding on the covered topics."
             }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(comp4046Version);
+        await context.CourseVersions.AddAsync(comp4046Version);
 
-    var comp4046Assessments = new List<CourseAssessment>
+        var comp4046Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -665,12 +665,12 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(comp4046Assessments);
+        await context.CourseAssessments.AddRangeAsync(comp4046Assessments);
 
-    await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-    return comp4046Version;
-}
+        return comp4046Version;
+    }
 
     public static async Task<CourseVersion> comp3057Gen(AppDbContext context, Code compCode, Term semester1)
     {
@@ -777,43 +777,43 @@ public class CourseSeed
     }
 
     public static async Task<CourseVersion> comp2876Gen(AppDbContext context, Code compCode, Term semester1)
-{
-    var comp2876 = new Course
     {
-        Name = "Demo Prerequisite Course",
-        CourseNumber = "2876",
-        CodeId = compCode.Id,
-        Credit = 3,
-        Description = ""
-    };
+        var comp2876 = new Course
+        {
+            Name = "Demo Prerequisite Course",
+            CourseNumber = "2876",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
 
-    await context.Courses.AddAsync(comp2876);
+        await context.Courses.AddAsync(comp2876);
 
-    var comp2876Version = new CourseVersion
-    {
-        Course = comp2876,
-        VersionNumber = 1,
-        Description = "",
-        AimAndObjectives = "",
-        CourseContent = "",
-        CILOs = new List<CILOs>
+        var comp2876Version = new CourseVersion
+        {
+            Course = comp2876,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
         {
             new CILOs { code = "CILO1", Description = "Demonstrate foundational knowledge required for prerequisite validation" },
             new CILOs { code = "CILO2", Description = "Apply basic concepts in a structured problem-solving context" },
             new CILOs { code = "CILO3", Description = "Identify and explain key terminology relevant to the prerequisite domain" }
         },
-        TLAs = new List<TLAs>
+            TLAs = new List<TLAs>
         {
             new TLAs { code = new[] { "Lecture" }, Description = "Students will attend lectures covering core prerequisite concepts." },
             new TLAs { code = new[] { "Tutorial" }, Description = "Students will complete guided exercises to reinforce prerequisite knowledge." }
         },
-        FromYear = 2025,
-        FromTermId = semester1.Id
-    };
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
 
-    await context.CourseVersions.AddAsync(comp2876Version);
+        await context.CourseVersions.AddAsync(comp2876Version);
 
-    var comp2876Assessments = new List<CourseAssessment>
+        var comp2876Assessments = new List<CourseAssessment>
     {
         new CourseAssessment
         {
@@ -831,12 +831,12 @@ public class CourseSeed
         }
     };
 
-    await context.CourseAssessments.AddRangeAsync(comp2876Assessments);
+        await context.CourseAssessments.AddRangeAsync(comp2876Assessments);
 
-    await context.SaveChangesAsync();
-    
-    return comp2876Version;
-}
+        await context.SaveChangesAsync();
+
+        return comp2876Version;
+    }
 
     public static async Task<CourseVersion> comp2877Gen(AppDbContext context, Code compCode, Term semester1)
     {
@@ -905,7 +905,7 @@ public class CourseSeed
         await context.CourseAssessments.AddRangeAsync(comp2877Assessments);
 
         await context.SaveChangesAsync();
-        
+
         return comp2877Version;
     }
 
@@ -999,7 +999,7 @@ public class CourseSeed
 
         var comp4027Section1 = new CourseSection()
         {
-            CourseVersion = math3836Version,
+            CourseVersion = comp4027Version,
             Year = 2025,
             Term = semester2,
             SectionNumber = 1
@@ -1007,7 +1007,7 @@ public class CourseSeed
 
         var comp4027Section2 = new CourseSection()
         {
-            CourseVersion = math3836Version,
+            CourseVersion = comp4027Version,
             Year = 2025,
             Term = semester2,
             SectionNumber = 2
@@ -1024,8 +1024,8 @@ public class CourseSeed
             {
                 Day = 1,
                 MeetingType = "Lecture",
-                StartTime = new TimeOnly(11,30),
-                EndTime = new TimeOnly(14,20)
+                StartTime = new TimeOnly(11, 30),
+                EndTime = new TimeOnly(14, 20)
             }
         );
         comp4027Section1.CourseMeetings.Add(
@@ -1033,8 +1033,8 @@ public class CourseSeed
             {
                 Day = 3,
                 MeetingType = "Lab",
-                StartTime = new TimeOnly(11,30),
-                EndTime = new TimeOnly(14,20)
+                StartTime = new TimeOnly(11, 30),
+                EndTime = new TimeOnly(14, 20)
             }
         );
 
@@ -1080,7 +1080,7 @@ public class CourseSeed
             comp4046Section2
         });
 
-// Section A meetings
+        // Section A meetings
         comp4046Section1.CourseMeetings.Add(new CourseMeeting()
         {
             Day = 1, // Mon
@@ -1110,7 +1110,7 @@ public class CourseSeed
             StartTime = new TimeOnly(11, 30),
             EndTime = new TimeOnly(12, 20)
         });
-        
+
         var comp4146Section1 = new CourseSection()
         {
             CourseVersion = comp4146Version,
@@ -1133,7 +1133,7 @@ public class CourseSeed
             comp4146Section2
         });
 
-// Section A meetings
+        // Section A meetings
         comp4146Section1.CourseMeetings.Add(new CourseMeeting()
         {
             Day = 2, // Tue
@@ -1149,7 +1149,7 @@ public class CourseSeed
             EndTime = new TimeOnly(10, 20)
         });
 
-// Section B meetings
+        // Section B meetings
         comp4146Section2.CourseMeetings.Add(new CourseMeeting()
         {
             Day = 1, // Mon
@@ -1164,17 +1164,17 @@ public class CourseSeed
             StartTime = new TimeOnly(11, 30),
             EndTime = new TimeOnly(12, 20)
         });
-        
-        
-    await context.SaveChangesAsync();
+
+
+        await context.SaveChangesAsync();
     }
 
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     public static async Task LinkCourseIntoCourseGroups(AppDbContext context, int courseVersionId, int courseGroupId)
     {
         var courseId = await context.CourseVersions
@@ -1197,7 +1197,7 @@ public class CourseSeed
 
         await context.SaveChangesAsync();
     }
-    
+
     private static async Task GenerateCourseEmbeddings(CourseVersion courseVersion, List<CourseAssessment> assessments,
         IAIProvider aiProvider, Course course)
     {
@@ -1246,5 +1246,5 @@ public class CourseSeed
             Console.WriteLine($"Failed to generate embeddings for course {course.Name}: {ex.Message}");
         }
     }
-    
+
 }
