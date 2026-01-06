@@ -4,11 +4,28 @@ import type { components } from '~/API/schema';
 type Section = components['schemas']['TimetableSectionDto']
 type Course = components["schemas"]["TimetableEntryDto"]
 
+interface BlockTimeItem {
+    id: string;
+    startTime: number;
+    endTime: number;
+}
+
+type BlockTimes = Record<number, BlockTimeItem[]>;
 
 interface CoursePanelProps {
     courses: Course[];
     selectedSections: Section[];
+    blockTimes: BlockTimes;
 }
+
+interface CourseGridEmits {
+    (e: "removeSection", sectionId: number): void;
+    (e: "deleteBlockTime", day: number, itemId: string): void;
+}
+
+const emit = defineEmits<CourseGridEmits>();
+
+
 
 const props = defineProps<CoursePanelProps>();
 
@@ -103,10 +120,20 @@ const getCourseContext = (meetingID: number) => {
                             <!-- meetings -->
                             <div v-for="meeting in meetingsByDay[dayIndex - 1] || []" :key="meeting.id"
                                 :style="getMeetingStyle(meeting)"
-                                class="absolute left-1 right-1 bg-primary/20 border border-primary rounded p-1 text-xs text-primary overflow-hidden">
+                                @click="emit('removeSection', getCourseContext(meeting.id)?.section.sectionId!)"
+                                class="absolute left-1 right-1 bg-primary/20 border border-primary rounded p-1 text-xs text-primary overflow-hidden hover:bg-primary/30 cursor-pointer">
 
                                 <div>{{ getCourseContext(meeting.id)?.course.courseName }}</div>
                                 <div>{{ meeting.startTime }} - {{ meeting.endTime }}</div>
+                            </div>
+
+                            <div v-for="blocktime in blockTimes[dayIndex - 1] || []" :key="blocktime.id"
+                                :style="getMeetingStyle({ startTime: blocktime.startTime.toString().padStart(2, '0') + ':30', endTime: blocktime.endTime.toString().padStart(2, '0') + ':20' })"
+                                @click="emit('deleteBlockTime', dayIndex - 1, blocktime.id)"
+                                class="absolute left-1 right-1 bg-black border border-primary rounded p-1 text-xs text-primary overflow-hidden hover:bg-primary/30 cursor-pointer">
+                                <div class=" text-white">
+                                    BLOCKED
+                                </div>
                             </div>
                         </div>
                     </div>

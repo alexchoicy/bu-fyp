@@ -12,9 +12,18 @@ import type { components } from "~/API/schema";
 type Course = components["schemas"]["TimetableEntryDto"]
 type Section = components['schemas']['TimetableSectionDto']
 
+interface BlockTimeItem {
+  id: string;
+  startTime: number;
+  endTime: number;
+}
+
+type BlockTimes = Record<number, BlockTimeItem[]>;
+
 interface CoursePanelProps {
   courses: Course[];
   selectedSections: Section[];
+  blockTimes: BlockTimes;
 }
 
 interface CoursePanelEmits {
@@ -89,6 +98,14 @@ const hasConflict = (section: Section) => {
   for (const m of currentMeetings) {
     for (const sm of selectedMeetings) {
       if (m.day === sm.day && doesOverlap(m.startTime, m.endTime, sm.startTime, sm.endTime)) {
+        return true;
+      }
+    }
+    const blocktimes = props.blockTimes[m.day] || [];
+    for (const bt of blocktimes) {
+      const btStart = bt.startTime.toString().padStart(2, '0') + ':30';
+      const btEnd = bt.endTime.toString().padStart(2, '0') + ':20';
+      if (doesOverlap(m.startTime, m.endTime, btStart, btEnd)) {
         return true;
       }
     }

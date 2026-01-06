@@ -14,6 +14,7 @@ const query = ref<Query>({
 const { data: availableItems, refresh } = useAPI<tableResponse>('timetable', { query });
 
 const filterDialogOpen = ref(false);
+const blockTimeDialogOpen = ref(false);
 
 const selectedSections = ref<Section[]>([]);
 
@@ -55,6 +56,26 @@ const totalCredits = computed(() => {
     return total + (course?.credit ?? 0);
   }, 0);
 });
+
+interface BlockTimeItem {
+  id: string;
+  startTime: number;
+  endTime: number;
+}
+
+type BlockTimes = Record<number, BlockTimeItem[]>;
+
+const blockTimes = ref<BlockTimes>({});
+
+const handleAddBlockTime = (day: number, items: BlockTimeItem[]) => {
+  blockTimes.value[day] = items;
+};
+
+const handleDeleteBlockTime = (day: number, itemId: string) => {
+  if (blockTimes.value[day]) {
+    blockTimes.value[day] = blockTimes.value[day].filter((item) => item.id !== itemId);
+  }
+};
 </script>
 
 <template>
@@ -71,7 +92,6 @@ const totalCredits = computed(() => {
         <div />
       </div>
     </header>
-
     <div class="flex-1 flex overflow-hidden">
       <div class="w-80 shrink-0 border-r border-border flex flex-col">
         <div class="px-3 py-2 bg-muted/50 border-b border-border">
@@ -79,14 +99,18 @@ const totalCredits = computed(() => {
         </div>
         <div class="w-full">
           <Button class=" w-full" @click="filterDialogOpen = true">Filter </Button>
+          <Button class=" w-full mt-2" @click="blockTimeDialogOpen = true"> Block time </Button>
         </div>
         <div class="flex-1 overflow-hidden">
           <UiTimetableCoursePanel :courses="availableItems?.entries ?? []" :selected-sections="selectedSections"
-            @add-section="handleAddSection" @remove-section="handleRemoveSection" />
+            @add-section="handleAddSection" @remove-section="handleRemoveSection" :block-times="blockTimes" />
         </div>
       </div>
-      <UiTimetableGrid :courses="availableItems?.entries ?? []" :selected-sections="selectedSections" />
+      <UiTimetableGrid :courses="availableItems?.entries ?? []" :selected-sections="selectedSections"
+        @remove-section="handleRemoveSection" :block-times="blockTimes" @delete-block-time="handleDeleteBlockTime" />
     </div>
     <UiTimetableFilter v-model:open="filterDialogOpen" v-model:query="query" :refresh="refresh" />
+    <UiTimetableBlocktime v-model:open="blockTimeDialogOpen" :block-times="blockTimes"
+      @add-block-time="handleAddBlockTime" @delete-block-time="handleDeleteBlockTime" />
   </div>
 </template>
