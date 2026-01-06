@@ -9,6 +9,8 @@ type Query = paths['/api/timetable']['get']['parameters']['query'];
 
 const query = ref<Query>({
   courseGroupId: undefined,
+  excludeCompletedCourses: true,
+  includeFailedRequirementCourses: false,
 });
 
 const { data: availableItems, refresh } = useAPI<tableResponse>('timetable', { query });

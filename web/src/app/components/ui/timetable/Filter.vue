@@ -53,6 +53,8 @@ const resetFilters = () => {
         termId: undefined,
         courseGroupId: undefined,
         categoryGroupId: undefined,
+        excludeCompletedCourses: true,
+        includeFailedRequirementCourses: false,
     });
 };
 
@@ -111,6 +113,16 @@ const resetFilters = () => {
                             </SelectGroup>
                         </SelectContent>
                     </Select>
+                </div>
+
+                <div class="flex items-center justify-between space-x-2">
+                    <Label>Exclude Completed Courses</Label>
+                    <Switch v-model="query.excludeCompletedCourses" />
+                </div>
+
+                <div class="flex items-center justify-between space-x-2">
+                    <Label>Include Failed Requirement Courses</Label>
+                    <Switch v-model="query.includeFailedRequirementCourses" />
                 </div>
 
                 <div class="flex justify-end">

@@ -30,7 +30,7 @@ public interface ICourseService
     Task<int> CreateCourseAsync(CreateCourseDto createCourseDto);
     Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto);
 
-    Task<TimetableResponseDto> GetTimetableAsync(string studentId, bool excludeEnrolled = true, int? year = null,
+    Task<TimetableResponseDto> GetTimetableAsync(string studentId, bool excludeEnrolled = true, bool includeFailedRequirementCourses = false, int? year = null,
         int? termId = null, int? courseGroupId = null, int? categoryGroupId = null);
 }
 
@@ -842,6 +842,7 @@ public class CourseService : ICourseService
 
 
     public async Task<TimetableResponseDto> GetTimetableAsync(string studentId, bool excludeEnrolled = true,
+    bool includeFailedRequirementCourses = false,
         int? year = null, int? termId = null, int? courseGroupId = null, int? categoryGroupId = null)
     {
         int defaultYear = year ?? _factService.GetCurrentAcademicYear();
@@ -952,6 +953,10 @@ public class CourseService : ICourseService
                 .Include(cs => cs.CourseVersion)
                 .ThenInclude(cv => cv.Course)
                 .ThenInclude(c => c.Code)
+                .Include(cs => cs.CourseVersion.Prerequisites)
+                .ThenInclude(pr => pr.RequiredCourseVersion)
+                .Include(cs => cs.CourseVersion.AntiRequisites)
+                .ThenInclude(ar => ar.ExcludedCourseVersion)
                 .Include(cs => cs.CourseMeetings)
                 .Include(cs => cs.Term)
                 .ToListAsync();
@@ -970,11 +975,54 @@ public class CourseService : ICourseService
                 .Include(cs => cs.CourseVersion)
                 .ThenInclude(cv => cv.Course)
                 .ThenInclude(c => c.Code)
+                .Include(cs => cs.CourseVersion.Prerequisites)
+                .ThenInclude(pr => pr.RequiredCourseVersion)
+                .Include(cs => cs.CourseVersion.AntiRequisites)
+                .ThenInclude(ar => ar.ExcludedCourseVersion)
                 .Include(cs => cs.CourseMeetings)
                 .Include(cs => cs.Term)
                 .ToListAsync();
         }
+        if (!includeFailedRequirementCourses)
+        {
+            var studentCompletedCourseIds = await _context.StudentCourses
+                .Where(sc => sc.StudentId == studentId)
+                .Select(sc => sc.CourseId)
+                .ToListAsync();
 
+            sections = sections.Where(section =>
+            {
+                var courseVersion = section.CourseVersion;
+
+                if (courseVersion.Prerequisites.Any())
+                {
+                    var requiredCourseIds = courseVersion.Prerequisites
+                        .Select(pr => pr.RequiredCourseVersion.CourseId)
+                        .ToList();
+
+                    var hasAllPrerequisites = requiredCourseIds.All(reqId =>
+                        studentCompletedCourseIds.Contains(reqId));
+
+                    if (!hasAllPrerequisites)
+                        return false;
+                }
+
+                if (courseVersion.AntiRequisites.Any())
+                {
+                    var excludedCourseIds = courseVersion.AntiRequisites
+                        .Select(ar => ar.ExcludedCourseVersion.CourseId)
+                        .ToList();
+
+                    var hasAnyAntiRequisites = excludedCourseIds.Any(excId =>
+                        studentCompletedCourseIds.Contains(excId));
+
+                    if (hasAnyAntiRequisites)
+                        return false;
+                }
+
+                return true;
+            }).ToList();
+        }
 
         List<TimetableEntryDto> entries = sections
             .GroupBy(section => new

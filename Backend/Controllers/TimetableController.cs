@@ -25,10 +25,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetTimetable(
-            [FromQuery] int? year = null, 
+            [FromQuery] int? year = null,
             [FromQuery] int? termId = null,
             [FromQuery] int? courseGroupId = null,
-            [FromQuery] int? categoryGroupId = null)
+            [FromQuery] int? categoryGroupId = null,
+            [FromQuery] bool excludeCompletedCourses = true,
+            [FromQuery] bool includeFailedRequirementCourses = false)
         {
             try
             {
@@ -37,7 +39,7 @@ namespace Backend.Controllers
                 {
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
-                var timetable = await _courseService.GetTimetableAsync(userId, true, year, termId, courseGroupId, categoryGroupId);
+                var timetable = await _courseService.GetTimetableAsync(userId, excludeCompletedCourses, includeFailedRequirementCourses, year, termId, courseGroupId, categoryGroupId);
                 return Ok(timetable);
             }
             catch (ArgumentException ex)
