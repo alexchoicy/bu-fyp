@@ -151,6 +151,10 @@ const hasConflict = (section: Section) => {
             </div>
           </button>
           <div v-if="expandedCourses.has(course.courseId)" class="bg-muted/30 border-t border-border">
+            <!-- TODO: THIS IS WEIRD -->
+            <Button class="w-full p-2" @click="navigateTo(`/courses/${course.courseId}`)"
+              @auxclick.prevent="navigateTo(`/courses/${course.courseId}`, { open: { target: '_blank' } })">Course
+              Details</Button>
             <div v-for="section in course.sections" :key="section.sectionId"
               class="flex items-center justify-between px-3 py-2 pl-9 border-b border-border last:border-b-0">
               <div class="flex-1 min-w-0">

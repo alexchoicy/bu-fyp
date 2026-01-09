@@ -13,7 +13,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <Card :class="{ 'border-green-500': userProgrammeDetail?.isCompleted }">
+    <Card :class="{ 'border-green-500 bg-green-50/30': userProgrammeDetail?.isCompleted }">
         <CardHeader>
             <CardTitle class="flex items-center justify-between">
                 {{ programmeCategory?.name }}
