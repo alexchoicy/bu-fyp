@@ -33,8 +33,8 @@ public class CourseSeed
             Course = comp1005,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "This course provides students with an overview of Information & Communication\nTechnologies, together with basic knowledge of computer-oriented problem solving\nmethodologies, algorithm development, general programming concepts and design\ntechniques.  Programming methods are introduced in a problem-solving approach using\na high-level programming language.\nUpon completion, students are expected to have an exposure to various areas of\nInformation & Communication Technologies. Students will gain experience in developing\nand implementing algorithms in a form of computer programs for solving real-world\napplications.",
+            CourseContent = "I. Programming Fundamentals\n   - Primitive data types, operators and expressions\n   - Control structures\n   - Repetition structure such as for loops\n - Composite structure such as arrays\n   - Programming style, program testing and documentation\nII. Digital Media Computing and Data Communications\n   - Image processing applications and basic concepts behind\n   - Computer graphics, virtual reality and their applications\n   - Data communications and its applications\nIII. Web Technology and Data Analysis\n   - New opportunities from new Web technologies\n   - Basic concepts in Web technology and architecture\n   - Data analysis and its applications",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -149,8 +149,8 @@ public class CourseSeed
             Course = math1025,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "This course applies concepts of pre-university level mathematics and statistics to solve real\nlife problems. Instead of drilling questions, students will learn problem-solving\nmethodologies and hands-on ICT (information and communication technology)  skills to\nsolve problems with computer software. The perspectives in this course are important for\nSTEM (science, technology, engineering and mathematics)  fields and quantitative aspects\nof business and economics, as well as for everyday statistical literacy.",
+            CourseContent = "Topics\nI From y=mx+b to Newton's Math\n  A Motivating examples: Calculus-the study of change\n  B Speedometer in 29A\n  C Making the most of your resources\n  D Tangent lines revisit\nII From honest data to fake news\n  A Motivating examples: abuse statistics and evidence\n  B Fake news with statistical graphs and charts\n  C More fake news by numbers and statistics\n  D Misleading interest rate for marketing\nIII From a few data to educated guesses\n  A Motivating examples: data analytics\n  B What's the problem?\n  C Why is one prediction better than the others?\n  D Linear thinking in a nonlinear world\nIV From random bet to the best odds\n  A Motivating examples: probability and randomness\n  B Numerical experiments on random events\n  C Probability and area under a curve\n  D \"Let's make a deal\", hosted by Monty Hall\nTextbook\n1. Lecture notes prepared by the instructor\nReferences\n1. L. Redlin, S. Watson, and J. Stewart, Precalculus: Mathematics for Calculus, Belmont,\nCA : Thomson Brooks/Cole, 2006.\n2. K. E. Hirst, Calculus of One Variable, Springer, 2006.\n3. P.S. Mann, Introductory Statistics, 8th Ed., Wiley, 2013.",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -263,8 +263,8 @@ public class CourseSeed
             Course = math3836,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "This course introduces the concept of data mining and data mining techniques (including\nadvanced statistical and machine learning techniques)  for solving problems such as data\ncleaning, clustering, classification, relation detection, forecasting. It also introduces\nstudents to modern data mining applications such as recommendation systems and\nmining natural languages. Through participation in practical projects, the student will gain\nthe capability to drive forward innovation systems locally in Hong Kong as well as\ninternationally.",
+            CourseContent = "Topics\nI Introduction\n  A The Knowledge Discovery Based in Databases (KDD)\n  B Data and Data Visualization\n  C Data Warehouse and Cloud storage\n  D Data Cleaning and Preprocessing\n  E Data Mining Principles\nII Mining Association Rules In Large Databases\n  A Association Rule Mining\n  B Mining Multidimensional Association Rules From Relational Databases\nIII Dimension Reduction techniques\n  A Principal Components Analysis\n  B Gaussian Process Latent Variable Model\n  C t-distributed Stochastic Neighbour Embedding\nIV Supervised Learning\n  A Neural Networks\n  B Linear and Partial Regression\n  C Metric Learning\nV Unsupervised Learning\n  A K - Means Clustering\n  B Gaussian Mixture Model\n  C Latent Dirichlet Allocation\nVI Recommendation Systems and mining natural language\n  A Collaborative Filtering\n  B Non-negative Matrix factorization\n  C Other advanced recommender algorithms\n  D Word and Sentence embedding\nTextbook\n1. Lecture notes prepared by the instructor\nReferences\n1. Pang-Ning Tan, Michael Steinbach, Anuj Karpatne, and Vipin Kumar, Introduction to\nData Mining (2nd Edition), Pearson, 2019\n2. Galit Shmueli, Peter C. Bruce, Inbal Yahav, Nitin R. Patel and Kenneth C. Lichtendahl\nJr., Data Mining for Business Analytics, Concepts, Techniques, and Applications, Wiley,\n2017\n3. Goodfellow, I.; Bengio, Y. & Courville, A., Deep Learning, MIT Press, 2016\n4. Jiawei Han, Micheline. Kamber and Jian Pei, Data Mining: Concepts and Techniques,\nThird Edition, The Morgan Kaufmann Publishers, 2011.\n5. Christopher M. Bishop, Pattern Recognition and Machine Learning, Springer, 2006.",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -372,8 +372,8 @@ public class CourseSeed
             Course = comp4027,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "To learn the latest development of knowledge discovery and data mining concepts and\ntechniques. Theories and algorithms for data mining and knowledge discovery will be\nintroduced. Relevant applications in specific domains such as medicine and heath care\nwill be covered.",
+            CourseContent = "I. Introduction to Data Mining\nA.  Overview of data mining\nB.  Data preparation for knowledge discovery\nC.  Data warehousing\nD.  Data visualization and exploration\nII. Data Mining Algorithms\nA.  Association rules\nB.  Apriori algorithms\nC.  Classification algorithms\nD.  Mining event sequences\nE.  Applications\nIII. Clustering\nA.  Classical algorithms\nB.  Graph-based clustering\nC.  Advanced methods\nD.  Applications\nIV. Case Studies in Data Mining\nA.  Health Informatics\nB.  Related applications",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -479,8 +479,8 @@ public class CourseSeed
             Course = comp4146,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "This course introduces students to prompt engineering for generative AI systems. With\nthe advancement of large language models (LLMs)  and other generative AI technologies,\nthe ability to design effective prompts has become a critical skill. The course aims to\nprovide students with both theoretical understanding and practical skills in crafting\nprompts that effectively communicate with and control generative AI systems. Students\nwill learn the principles that govern different types of generative AI models, develop\ntechniques to optimize prompt design, and build applications that leverage these powerful\nsystems. Throughout the course, some emphasis will be placed on ethical considerations,\nevaluation methodologies, and the practical applications of prompt engineering in real\nworld scenarios.",
+            CourseContent = "I. Introduction to Prompt Engineering and Generative AI Fundamentals\nA.    Introduction to Prompt Engineering\nB.    History and Evolution of Generative AI\nC.    Understanding Generative AI Models\nD.    Moving from Model Completion to Conversation\nII. Core Prompt Engineering Techniques\n   - Designing Generative AI Applications\n   - Prompt Content: Static and Dynamic\n   - Assembling Effective Prompts\n   - Optimizing Model Responses\nIII. Advanced Prompt Engineering Topics\nA.    Building Conversational Agents\nB.    Building Multi-Step Applications\nC.    Prompt-Based Fine-Tuning\nIV. Evaluation, Ethics, and Future Directions\nA.    Assessing Prompt and Model Quality\nB.    Ethical Considerations in Prompt Engineering\nC.    Multimodal Models",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -588,8 +588,8 @@ public class CourseSeed
             Course = comp4046,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "This course aims to give students a thorough grounding in the theory, techniques and\npractical issues involved in computer-based information systems control and\nauditing. The contents of this course include (but not limited to)  concepts, approaches,\nand techniques of information system auditing, security controls in organizations, and the\napplication of IT in auditing. This course reviews some basic concepts of computer\nsecurity.",
+            CourseContent = "I. Introduction to IS Auditing\nA.  Objectives of IS audit and control\nB.  The structure of an IS audit and audit reports\nC.  IS auditing standards\nD.  Computer assisted audit tools\nII. Organization Security Controls\nA. Physical controls\nB. Logical controls\nC. Operational controls\nD. Personnel security and management practices\nE. Application software control\nIII. Systems and Network Security\nA. Systems and network security issues\nB. Non-malicious errors, virus and worms\nC. Access control, trusted operating systems\nD. Encryption in network\nE. User authentication\nF. E-mail security\nG. IP security\nH. Web security\nIV. Incident Handling and Computer Forensic",
             CILOs = new List<CILOs>
         {
             new CILOs
@@ -690,8 +690,8 @@ public class CourseSeed
             Course = comp3057,
             VersionNumber = 1,
             Description = "",
-            AimAndObjectives = "",
-            CourseContent = "",
+            AimAndObjectives = "To introduce the fundamentals, models and techniques commonly found in artificial\nintelligence applications, and in particular, machine learning. To gain some hands-on\nexperience on developing machine learning solutions.",
+            CourseContent = "I. Applied Mathematics\n   - Linear Algebra\n   - Probability and Information Theory\n   - Convex Optimization\n   - Numerical Computation\nII. Knowledge Representation\n   - Problem Solving (A* Search and Constraint Satisfaction)\n   - Knowledge, Reasoning and Planning (First-order Logic and Automated Planning)\n   - Uncertain Knowledge and Reasoning (Probabilistic Reasoning and Programming)\nIII. Learning Tasks\n   - Supervised Learning (Classification, Regression and Ranking)\n   - Unsupervised Learning (Clustering and Dimensionality Reduction)\n   - Reinforcement Learning (Q-learning and TD learning)\nIV. Basic Models\n   - Model Selection and Validation\n   - Decision Trees and Nearest Neighbor\n   - Support Vector Machines and Kernel Methods\n   - Generative and Discriminative Models\nV. Deep Models\n   - Deep Forward, Convolutional and Recurrent Networks\n   - Regularization and Optimization for Deep Learning",
             CILOs = new List<CILOs>
             {
                 new CILOs

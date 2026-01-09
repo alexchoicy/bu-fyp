@@ -18,9 +18,9 @@ public class ProgrammeSeed
         var compISAElective002 = new CourseGroup { Name = "ISA Elective Courses - COMP-ISA-ELEC-002" };
         var compISAElective003 = new CourseGroup { Name = "ISA Elective Courses - COMP-ISA-ELEC-003" };
 
-        var compCode =  await context.Codes.FirstAsync(c => c.Tag == "COMP");
-        var mathCode =  await context.Codes.FirstAsync(c => c.Tag == "MATH");
-        
+        var compCode = await context.Codes.FirstAsync(c => c.Tag == "COMP");
+        var mathCode = await context.Codes.FirstAsync(c => c.Tag == "MATH");
+
         freeElective001.GroupCourses.Add(new GroupCourse
         {
             Code = compCode
@@ -29,7 +29,7 @@ public class ProgrammeSeed
         {
             Code = mathCode
         });
-        
+
 
         await context.CourseGroups.AddRangeAsync(compSciCore001, freeElective001, compISAElective001, compISAElective002, compISAElective003);
         await context.SaveChangesAsync();
@@ -49,7 +49,7 @@ public class ProgrammeSeed
             StartYear = 2024,
             EndYear = 2025,
             IsActive = true,
-            TotalCredits = 9
+            TotalCredits = 45
         };
         await context.ProgrammeVersions.AddAsync(programmeVersion);
         await context.SaveChangesAsync();
@@ -155,7 +155,7 @@ public class ProgrammeSeed
         };
         await context.CategoryGroups.AddRangeAsync(categoryGroup);
         await context.SaveChangesAsync();
-        
+
         await LinkStudentToProgrammeAsync(context, programmeVersion);
 
     }
