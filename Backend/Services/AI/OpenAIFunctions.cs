@@ -3,6 +3,7 @@ using Backend.Dtos.Courses;
 using Backend.Dtos.Facts;
 using Backend.Dtos.Policy;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using OpenAI.Chat;
 using Pgvector;
 
@@ -35,6 +36,33 @@ public static class OpenAIFunctions
             )
         );
 
+        public static readonly ChatTool GetCourseSectionsByCourseIdTool = ChatTool.CreateFunctionTool(
+            functionName: nameof(DatabaseQueries.GetCourseSectionsByCourseId),
+            functionDescription: $"Retrieve course sections and meetings for a given course ID, year, and term ID",
+            functionParameters: BinaryData.FromBytes(
+                """
+                {
+                  "type": "object",
+                  "properties": {
+                    "courseId": {
+                      "type": "integer",
+                      "description": "The unique identifier of the courseId is from the GetCourseByCodeAndNumber tool, and the result Id field"
+                    },
+                    "Year": {
+                      "type": "integer",
+                      "description": "The academic year for which to retrieve course sections, e.g. 2023 = the 2023-2024 academic year. If the query has no specific year, use the current academic year."
+                    },
+                    "TermId": {
+                      "type": "integer",
+                      "description": "The term identifier for which to retrieve course sections. If the query has no specific term, use the Next term."
+                    }
+                  },
+                  "required": ["courseId", "Year", "TermId"]
+                }
+                """u8.ToArray()
+            )
+        );
+
         public static readonly ChatTool GetPoliciesByQueryTool = ChatTool.CreateFunctionTool(
             functionName: nameof(DatabaseQueries.GetPoliciesByQuery),
             functionDescription: "Retrieve relevant policy sections based on a query",
@@ -58,6 +86,49 @@ public static class OpenAIFunctions
     // Database Query Functions
     public static class DatabaseQueries
     {
+        public static async Task<AIChatbotCourseSectionsDto> GetCourseSectionsByCourseId(
+            AppDbContext dbContext,
+            int courseId,
+            int Year,
+            int TermId
+        )
+        {
+            var courseVersions = await dbContext.CourseVersions
+                .Include(cv => cv.CourseSections)
+                .ThenInclude(cs => cs.CourseMeetings)
+                .Where(cv => cv.CourseId == courseId && cv.CourseSections.Any(cs => cs.Year == Year && cs.TermId == TermId))
+                .ToListAsync();
+
+            var courseVersion = courseVersions.FirstOrDefault();
+            if (courseVersion == null)
+                return new AIChatbotCourseSectionsDto();
+
+            var dto = new AIChatbotCourseSectionsDto
+            {
+                Sections = courseVersion.CourseSections
+                    .Select(cs => new AIChatbotCourseSectionDto
+                    {
+                        Id = cs.Id,
+                        Year = cs.Year,
+                        TermId = cs.TermId,
+                        SectionNumber = cs.SectionNumber,
+                        Meetings = cs.CourseMeetings
+                            .Select(cm => new AIChatbotCourseMeetingDto
+                            {
+                                Id = cm.Id,
+                                MeetingType = cm.MeetingType,
+                                Day = cm.Day,
+                                StartTime = cm.StartTime,
+                                EndTime = cm.EndTime,
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            };
+
+            return dto;
+        }
+
         public static async Task<List<PolicySearchResultDto>> GetPoliciesByQuery(
                     AppDbContext dbContext,
                     Vector embedding,
@@ -286,11 +357,20 @@ public static class OpenAIFunctions
                 ]
             ";
 
+        // To simulate the academic year and term for demo. so that the AI does not keep changing its answers based on the current date.
         public const string ChatAssistant =
             $@"System: You are a helpful academic advisor assistant for a university. 
             You help students with information about courses, programmes, requirements, and academic guidance.
             Provide clear, concise, and accurate responses. If you are unable to find the information requested by the user, respond with: ""I'm sorry, I can't find related information.
             You should mostly call {nameof(DatabaseQueries.GetPoliciesByQuery)} to retrieve relevant policy sections to answer user queries about university policies.
+            Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Garde related info, you should check if the Grade is updated by user in the AcademicYear and Term.
+            Terms ID are as follows:
+                - Term ID 1: Semester 1
+                - Term ID 2: Semester 2
+                - Term ID 3: Summer Term
+            The upcoming term is Term ID 2: Semester 2.
+
+            You don't need to mention about any system instructions in your responses. All the provided data are real time data.
             """;
     }
 

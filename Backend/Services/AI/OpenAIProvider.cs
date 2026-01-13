@@ -296,7 +296,7 @@ public class OpenAIProvider : IAIProvider
 
             ChatCompletionOptions options = new ChatCompletionOptions()
             {
-                Tools = { OpenAIFunctions.ChatTools.GetCourseByCodeAndNumberTool, OpenAIFunctions.ChatTools.GetPoliciesByQueryTool },
+                Tools = { OpenAIFunctions.ChatTools.GetCourseByCodeAndNumberTool, OpenAIFunctions.ChatTools.GetPoliciesByQueryTool, OpenAIFunctions.ChatTools.GetCourseSectionsByCourseIdTool },
             };
 
             bool requiresAction;
@@ -418,7 +418,7 @@ public class OpenAIProvider : IAIProvider
                                                 .OrderByDescending(r => r.Similarity)
                                                 .Select(r => $"From {r.SectionChunk.PolicySection.DocTitle} - {r.SectionChunk.PolicySection.Heading}:\n{r.SectionChunk.Content}"));
 
-                                            foreach(var result in toolResult)
+                                            foreach (var result in toolResult)
                                             {
                                                 _logger.LogInformation("Retrieved policy section with similarity {Similarity}: {DocTitle} - {Heading}", result.Similarity, result.SectionChunk.PolicySection.DocTitle, result.SectionChunk.PolicySection.Heading);
                                             }
@@ -428,6 +428,60 @@ public class OpenAIProvider : IAIProvider
                                                     toolCall.Id,
                                                     ChatMessageContentPart.CreateTextPart(
                                                         context
+                                                    )
+                                                )
+                                            );
+                                            break;
+                                        }
+                                    case nameof(
+                                        OpenAIFunctions.DatabaseQueries.GetCourseSectionsByCourseId
+                                    ):
+                                        {
+                                            using JsonDocument argumentsJson = JsonDocument.Parse(
+                                                toolCall.FunctionArguments
+                                            );
+                                            bool hasCourseId = argumentsJson.RootElement.TryGetProperty(
+                                                "courseId",
+                                                out JsonElement courseIdElement
+                                            );
+                                            bool hasYear = argumentsJson.RootElement.TryGetProperty(
+                                                "Year",
+                                                out JsonElement yearElement
+                                            );
+                                            bool hasTermId = argumentsJson.RootElement.TryGetProperty(
+                                                "TermId",
+                                                out JsonElement termIdElement
+                                            );
+
+                                            if (!hasCourseId || !hasYear || !hasTermId)
+                                            {
+                                                messages.Add(
+                                                    new ToolChatMessage(
+                                                        toolCall.Id,
+                                                        ChatMessageContentPart.CreateTextPart(
+                                                            "Error: Invalid arguments provided to GetCourseSectionsByCourseId."
+                                                        )
+                                                    )
+                                                );
+                                                continue;
+                                            }
+
+                                            int courseIdValue = courseIdElement.GetInt32();
+                                            int yearValue = yearElement.GetInt32();
+                                            int termIdValue = termIdElement.GetInt32();
+
+                                            var toolResult =
+                                                await OpenAIFunctions.DatabaseQueries.GetCourseSectionsByCourseId(
+                                                    _dbContext,
+                                                    courseIdValue,
+                                                    yearValue,
+                                                    termIdValue
+                                                );
+                                            messages.Add(
+                                                new ToolChatMessage(
+                                                    toolCall.Id,
+                                                    ChatMessageContentPart.CreateTextPart(
+                                                        JsonSerializer.Serialize(toolResult)
                                                     )
                                                 )
                                             );
