@@ -24,14 +24,25 @@ public interface ICourseService
     Task<CourseResponseDto?> GetCourseByIdAsync(int id);
     Task<List<SimpleCourseDto>> GetSimpleCoursesAsync();
 
-    Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize,
-        AIProviderType? providerType = null);
+    Task<PdfParseResponseDto> ProcessPdfAsync(
+        Stream pdfStream,
+        string fileName,
+        long fileSize,
+        AIProviderType? providerType = null
+    );
 
     Task<int> CreateCourseAsync(CreateCourseDto createCourseDto);
     Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto);
 
-    Task<TimetableResponseDto> GetTimetableAsync(string studentId, bool excludeEnrolled = true, bool includeFailedRequirementCourses = false, int? year = null,
-        int? termId = null, int? courseGroupId = null, int? categoryGroupId = null);
+    Task<TimetableResponseDto> GetTimetableAsync(
+        string studentId,
+        bool excludeEnrolled = true,
+        bool includeFailedRequirementCourses = false,
+        int? year = null,
+        int? termId = null,
+        int? courseGroupId = null,
+        int? categoryGroupId = null
+    );
 }
 
 public class CourseService : ICourseService
@@ -47,9 +58,18 @@ public class CourseService : ICourseService
         { "NO_OF_UNITS", @"3\.\s*NO\.\s*OF UNITS[:\s]*(.+?)(?=4\.\s*OFFERING DEPARTMENT|$)" },
         { "OFFERING_DEPARTMENT", @"4\.\s*OFFERING DEPARTMENT[:\s]*(.+?)(?=5\.\s*PREREQUISITES|$)" },
         { "PREREQUISITES", @"5\.\s*PREREQUISITES[:\s]*(.+?)(?=6\.\s*MEDIUM OF INSTRUCTION|$)" },
-        { "MEDIUM_OF_INSTRUCTION", @"6\.\s*MEDIUM OF INSTRUCTION[:\s]*(.+?)(?=7\.\s*AIMS\s*[&AND]*\s*OBJECTIVES|$)" },
-        { "AIMS_OBJECTIVES", @"7\.\s*AIMS\s*[&AND]*\s*OBJECTIVES[:\s]*(.+?)(?=8\.\s*COURSE CONTENT|$)" },
-        { "COURSE_CONTENT", @"8\.\s*COURSE CONTENT[:\s]*(.+?)(?=9\.\s*COURSE INTENDED LEARNING OUTCOMES|$)" },
+        {
+            "MEDIUM_OF_INSTRUCTION",
+            @"6\.\s*MEDIUM OF INSTRUCTION[:\s]*(.+?)(?=7\.\s*AIMS\s*[&AND]*\s*OBJECTIVES|$)"
+        },
+        {
+            "AIMS_OBJECTIVES",
+            @"7\.\s*AIMS\s*[&AND]*\s*OBJECTIVES[:\s]*(.+?)(?=8\.\s*COURSE CONTENT|$)"
+        },
+        {
+            "COURSE_CONTENT",
+            @"8\.\s*COURSE CONTENT[:\s]*(.+?)(?=9\.\s*COURSE INTENDED LEARNING OUTCOMES|$)"
+        },
         {
             "CILOS",
             @"9\.\s*COURSE INTENDED LEARNING OUTCOMES\s*\(?CILOs?\)?[:\s]*(.+?)(?=10\.\s*TEACHING\s*[&AND]*\s*LEARNING ACTIVITIES|$)"
@@ -58,12 +78,16 @@ public class CourseService : ICourseService
             "TLAS",
             @"10\.\s*TEACHING\s*[&AND]*\s*LEARNING ACTIVITIES\s*\(?TLAs?\)?[:\s]*(.+?)(?=11\.\s*ASSESSMENT METHODS|$)"
         },
-        { "ASSESSMENT_METHODS", @"11\.\s*ASSESSMENT METHODS\s*\(?AMs?\)?[:\s]*(.+?)$" }
+        { "ASSESSMENT_METHODS", @"11\.\s*ASSESSMENT METHODS\s*\(?AMs?\)?[:\s]*(.+?)$" },
     };
 
     private static readonly Regex courseCodeExtract = new Regex(@"\b([A-Za-z]{4})\s?(\d{4})\b");
 
-    public CourseService(AppDbContext context, IAIProviderFactory aiProviderFactory, IFactService factService)
+    public CourseService(
+        AppDbContext context,
+        IAIProviderFactory aiProviderFactory,
+        IFactService factService
+    )
     {
         _context = context;
         _aiProviderFactory = aiProviderFactory;
@@ -82,11 +106,9 @@ public class CourseService : ICourseService
             Credit = course.Credit,
             IsActive = course.IsActive,
             Description = course.Description,
-            Departments = course.CourseDepartments
-                .Select(cd => cd.Department.Name)
-                .ToList(),
-            Versions = course.CourseVersions
-                .OrderByDescending(cv => cv.VersionNumber)
+            Departments = course.CourseDepartments.Select(cd => cd.Department.Name).ToList(),
+            Versions = course
+                .CourseVersions.OrderByDescending(cv => cv.VersionNumber)
                 .Select(cv => new CourseVersionResponseDto
                 {
                     Id = cv.Id,
@@ -101,81 +123,78 @@ public class CourseService : ICourseService
                     FromTerm = new TermResponseDto
                     {
                         Id = cv.FromTerm!.Id,
-                        Name = cv.FromTerm.Name
+                        Name = cv.FromTerm.Name,
                     },
                     ToYear = cv.ToYear,
-                    ToTerm = cv.ToTerm != null
-                        ? new TermResponseDto
-                        {
-                            Id = cv.ToTerm.Id,
-                            Name = cv.ToTerm.Name
-                        }
-                        : null,
-                    MediumOfInstruction = cv.CourseVersionMediums
-                        .Select(cvm => cvm.MediumOfInstruction.Name)
+                    ToTerm =
+                        cv.ToTerm != null
+                            ? new TermResponseDto { Id = cv.ToTerm.Id, Name = cv.ToTerm.Name }
+                            : null,
+                    MediumOfInstruction = cv
+                        .CourseVersionMediums.Select(cvm => cvm.MediumOfInstruction.Name)
                         .ToList(),
-                    Assessments = cv.Assessments
-                        .Select(a => new AssessmentResponseDto
+                    Assessments = cv
+                        .Assessments.Select(a => new AssessmentResponseDto
                         {
                             Id = a.Id,
                             Name = a.Name,
                             Weighting = a.Weighting,
                             Category = a.Category.ToString(),
-                            Description = a.Description
+                            Description = a.Description,
                         })
                         .ToList(),
-                    PreRequisites = cv.Prerequisites
-                        .Select(pr => new SimpleCourseDto
+                    PreRequisites = cv
+                        .Prerequisites.Select(pr => new SimpleCourseDto
                         {
                             Id = pr.RequiredCourseVersion.Course.Id,
                             Name = pr.RequiredCourseVersion.Course.Name,
                             CourseNumber = pr.RequiredCourseVersion.Course.CourseNumber,
                             CodeId = pr.RequiredCourseVersion.Course.CodeId,
                             CodeTag = pr.RequiredCourseVersion.Course.Code.Tag,
-                            MostRecentVersion = null
+                            MostRecentVersion = null,
                         })
                         .ToList(),
-                    AntiRequisites = cv.AntiRequisites
-                        .Select(ar => new SimpleCourseDto
+                    AntiRequisites = cv
+                        .AntiRequisites.Select(ar => new SimpleCourseDto
                         {
                             Id = ar.ExcludedCourseVersion.Course.Id,
                             Name = ar.ExcludedCourseVersion.Course.Name,
                             CourseNumber = ar.ExcludedCourseVersion.Course.CourseNumber,
                             CodeId = ar.ExcludedCourseVersion.Course.CodeId,
                             CodeTag = ar.ExcludedCourseVersion.Course.Code.Tag,
-                            MostRecentVersion = null
+                            MostRecentVersion = null,
                         })
-                        .ToList()
+                        .ToList(),
                 })
-                .ToList()
+                .ToList(),
         };
     }
 
     public async Task<List<CourseResponseDto>> GetCoursesAsync()
     {
-        var courses = await _context.Courses
-            .Include(c => c.Code)
+        var courses = await _context
+            .Courses.Include(c => c.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.CourseVersionMediums)
-            .ThenInclude(cvm => cvm.MediumOfInstruction)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Assessments)
+                .ThenInclude(cv => cv.Assessments)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.FromTerm)
+                .ThenInclude(cv => cv.FromTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.ToTerm)
+                .ThenInclude(cv => cv.ToTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Prerequisites)
-            .ThenInclude(pr => pr.RequiredCourseVersion)
-            .ThenInclude(rcv => rcv.Course)
-            .ThenInclude(rc => rc.Code)
+                .ThenInclude(cv => cv.Prerequisites)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
+                        .ThenInclude(rcv => rcv.Course)
+                            .ThenInclude(rc => rc.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.AntiRequisites)
-            .ThenInclude(ar => ar.ExcludedCourseVersion)
-            .ThenInclude(ecv => ecv.Course)
-            .ThenInclude(ec => ec.Code)
+                .ThenInclude(cv => cv.AntiRequisites)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
+                        .ThenInclude(ecv => ecv.Course)
+                            .ThenInclude(ec => ec.Code)
             .Include(c => c.CourseDepartments)
-            .ThenInclude(cd => cd.Department)
+                .ThenInclude(cd => cd.Department)
             .ToListAsync();
 
         return courses.Select(c => MapCourseToResponseDto(c)).ToList();
@@ -184,66 +203,65 @@ public class CourseService : ICourseService
     public async Task<List<CourseResponseDto>> GetCoursesAsync(string studentId)
     {
         // Get the list of course IDs the student is already enrolled in
-        var enrolledCourseIds = await _context.StudentCourses
-            .Where(sc => sc.StudentId == studentId)
+        var enrolledCourseIds = await _context
+            .StudentCourses.Where(sc => sc.StudentId == studentId)
             .Select(sc => sc.CourseId)
             .ToListAsync();
 
-        var courses = await _context.Courses
-            .Where(c => !enrolledCourseIds.Contains(c.Id))
+        var courses = await _context
+            .Courses.Where(c => !enrolledCourseIds.Contains(c.Id))
             .Include(c => c.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.CourseVersionMediums)
-            .ThenInclude(cvm => cvm.MediumOfInstruction)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Assessments)
+                .ThenInclude(cv => cv.Assessments)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.FromTerm)
+                .ThenInclude(cv => cv.FromTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.ToTerm)
+                .ThenInclude(cv => cv.ToTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Prerequisites)
-            .ThenInclude(pr => pr.RequiredCourseVersion)
-            .ThenInclude(rcv => rcv.Course)
-            .ThenInclude(rc => rc.Code)
+                .ThenInclude(cv => cv.Prerequisites)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
+                        .ThenInclude(rcv => rcv.Course)
+                            .ThenInclude(rc => rc.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.AntiRequisites)
-            .ThenInclude(ar => ar.ExcludedCourseVersion)
-            .ThenInclude(ecv => ecv.Course)
-            .ThenInclude(ec => ec.Code)
+                .ThenInclude(cv => cv.AntiRequisites)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
+                        .ThenInclude(ecv => ecv.Course)
+                            .ThenInclude(ec => ec.Code)
             .Include(c => c.CourseDepartments)
-            .ThenInclude(cd => cd.Department)
+                .ThenInclude(cd => cd.Department)
             .ToListAsync();
-
 
         return courses.Select(c => MapCourseToResponseDto(c)).ToList();
     }
 
     public async Task<CourseResponseDto?> GetCourseByIdAsync(int id)
     {
-        var course = await _context.Courses
-            .Include(c => c.Code)
+        var course = await _context
+            .Courses.Include(c => c.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.CourseVersionMediums)
-            .ThenInclude(cvm => cvm.MediumOfInstruction)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Assessments)
+                .ThenInclude(cv => cv.Assessments)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.FromTerm)
+                .ThenInclude(cv => cv.FromTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.ToTerm)
+                .ThenInclude(cv => cv.ToTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Prerequisites)
-            .ThenInclude(pr => pr.RequiredCourseVersion)
-            .ThenInclude(rcv => rcv.Course)
-            .ThenInclude(rc => rc.Code)
+                .ThenInclude(cv => cv.Prerequisites)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
+                        .ThenInclude(rcv => rcv.Course)
+                            .ThenInclude(rc => rc.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.AntiRequisites)
-            .ThenInclude(ar => ar.ExcludedCourseVersion)
-            .ThenInclude(ecv => ecv.Course)
-            .ThenInclude(ec => ec.Code)
+                .ThenInclude(cv => cv.AntiRequisites)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
+                        .ThenInclude(ecv => ecv.Course)
+                            .ThenInclude(ec => ec.Code)
             .Include(c => c.CourseDepartments)
-            .ThenInclude(cd => cd.Department)
+                .ThenInclude(cd => cd.Department)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         return course != null ? MapCourseToResponseDto(course) : null;
@@ -251,102 +269,100 @@ public class CourseService : ICourseService
 
     public async Task<List<SimpleCourseDto>> GetSimpleCoursesAsync()
     {
-        var courses = await _context.Courses
-            .Include(c => c.Code)
+        var courses = await _context
+            .Courses.Include(c => c.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.CourseVersionMediums)
-            .ThenInclude(cvm => cvm.MediumOfInstruction)
+                .ThenInclude(cv => cv.CourseVersionMediums)
+                    .ThenInclude(cvm => cvm.MediumOfInstruction)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Assessments)
+                .ThenInclude(cv => cv.Assessments)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.FromTerm)
+                .ThenInclude(cv => cv.FromTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.ToTerm)
+                .ThenInclude(cv => cv.ToTerm)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.Prerequisites)
-            .ThenInclude(pr => pr.RequiredCourseVersion)
-            .ThenInclude(rcv => rcv.Course)
-            .ThenInclude(rc => rc.Code)
+                .ThenInclude(cv => cv.Prerequisites)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
+                        .ThenInclude(rcv => rcv.Course)
+                            .ThenInclude(rc => rc.Code)
             .Include(c => c.CourseVersions)
-            .ThenInclude(cv => cv.AntiRequisites)
-            .ThenInclude(ar => ar.ExcludedCourseVersion)
-            .ThenInclude(ecv => ecv.Course)
-            .ThenInclude(ec => ec.Code)
+                .ThenInclude(cv => cv.AntiRequisites)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
+                        .ThenInclude(ecv => ecv.Course)
+                            .ThenInclude(ec => ec.Code)
             .ToListAsync();
 
-        return courses.Select(c => new SimpleCourseDto
-        {
-            Id = c.Id,
-            Name = c.Name,
-            CourseNumber = c.CourseNumber,
-            CodeId = c.CodeId,
-            CodeTag = c.Code.Tag,
-            MostRecentVersion = c.CourseVersions
-                .OrderByDescending(cv => cv.VersionNumber)
-                .Select(cv => new CourseVersionResponseDto
-                {
-                    Id = cv.Id,
-                    Description = cv.Description,
-                    AimAndObjectives = cv.AimAndObjectives,
-                    CourseContent = cv.CourseContent,
-                    CILOs = cv.CILOs,
-                    TLAs = cv.TLAs,
-                    VersionNumber = cv.VersionNumber,
-                    CreatedAt = cv.CreatedAt,
-                    FromYear = cv.FromYear,
-                    FromTerm = new TermResponseDto
+        return courses
+            .Select(c => new SimpleCourseDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                CourseNumber = c.CourseNumber,
+                CodeId = c.CodeId,
+                CodeTag = c.Code.Tag,
+                MostRecentVersion = c
+                    .CourseVersions.OrderByDescending(cv => cv.VersionNumber)
+                    .Select(cv => new CourseVersionResponseDto
                     {
-                        Id = cv.FromTerm!.Id,
-                        Name = cv.FromTerm.Name
-                    },
-                    ToYear = cv.ToYear,
-                    ToTerm = cv.ToTerm != null
-                        ? new TermResponseDto
+                        Id = cv.Id,
+                        Description = cv.Description,
+                        AimAndObjectives = cv.AimAndObjectives,
+                        CourseContent = cv.CourseContent,
+                        CILOs = cv.CILOs,
+                        TLAs = cv.TLAs,
+                        VersionNumber = cv.VersionNumber,
+                        CreatedAt = cv.CreatedAt,
+                        FromYear = cv.FromYear,
+                        FromTerm = new TermResponseDto
                         {
-                            Id = cv.ToTerm.Id,
-                            Name = cv.ToTerm.Name
-                        }
-                        : null,
-                    MediumOfInstruction = cv.CourseVersionMediums
-                        .Select(cvm => cvm.MediumOfInstruction.Name)
-                        .ToList(),
-                    Assessments = cv.Assessments
-                        .Select(a => new AssessmentResponseDto
-                        {
-                            Id = a.Id,
-                            Name = a.Name,
-                            Weighting = a.Weighting,
-                            Category = a.Category.ToString(),
-                            Description = a.Description
-                        })
-                        .ToList(),
-                    PreRequisites = cv.Prerequisites
-                        .Select(pr => new SimpleCourseDto
-                        {
-                            Id = pr.RequiredCourseVersion.Course.Id,
-                            Name = pr.RequiredCourseVersion.Course.Name,
-                            CourseNumber = pr.RequiredCourseVersion.Course.CourseNumber,
-                            CodeId = pr.RequiredCourseVersion.Course.CodeId,
-                            CodeTag = pr.RequiredCourseVersion.Course.Code.Tag,
-                            MostRecentVersion = null
-                        })
-                        .ToList(),
-                    AntiRequisites = cv.AntiRequisites
-                        .Select(ar => new SimpleCourseDto
-                        {
-                            Id = ar.ExcludedCourseVersion.Course.Id,
-                            Name = ar.ExcludedCourseVersion.Course.Name,
-                            CourseNumber = ar.ExcludedCourseVersion.Course.CourseNumber,
-                            CodeId = ar.ExcludedCourseVersion.Course.CodeId,
-                            CodeTag = ar.ExcludedCourseVersion.Course.Code.Tag,
-                            MostRecentVersion = null
-                        })
-                        .ToList()
-                })
-                .FirstOrDefault()
-        }).ToList();
+                            Id = cv.FromTerm!.Id,
+                            Name = cv.FromTerm.Name,
+                        },
+                        ToYear = cv.ToYear,
+                        ToTerm =
+                            cv.ToTerm != null
+                                ? new TermResponseDto { Id = cv.ToTerm.Id, Name = cv.ToTerm.Name }
+                                : null,
+                        MediumOfInstruction = cv
+                            .CourseVersionMediums.Select(cvm => cvm.MediumOfInstruction.Name)
+                            .ToList(),
+                        Assessments = cv
+                            .Assessments.Select(a => new AssessmentResponseDto
+                            {
+                                Id = a.Id,
+                                Name = a.Name,
+                                Weighting = a.Weighting,
+                                Category = a.Category.ToString(),
+                                Description = a.Description,
+                            })
+                            .ToList(),
+                        PreRequisites = cv
+                            .Prerequisites.Select(pr => new SimpleCourseDto
+                            {
+                                Id = pr.RequiredCourseVersion.Course.Id,
+                                Name = pr.RequiredCourseVersion.Course.Name,
+                                CourseNumber = pr.RequiredCourseVersion.Course.CourseNumber,
+                                CodeId = pr.RequiredCourseVersion.Course.CodeId,
+                                CodeTag = pr.RequiredCourseVersion.Course.Code.Tag,
+                                MostRecentVersion = null,
+                            })
+                            .ToList(),
+                        AntiRequisites = cv
+                            .AntiRequisites.Select(ar => new SimpleCourseDto
+                            {
+                                Id = ar.ExcludedCourseVersion.Course.Id,
+                                Name = ar.ExcludedCourseVersion.Course.Name,
+                                CourseNumber = ar.ExcludedCourseVersion.Course.CourseNumber,
+                                CodeId = ar.ExcludedCourseVersion.Course.CodeId,
+                                CodeTag = ar.ExcludedCourseVersion.Course.Code.Tag,
+                                MostRecentVersion = null,
+                            })
+                            .ToList(),
+                    })
+                    .FirstOrDefault(),
+            })
+            .ToList();
     }
-
 
     private (string, string) ExtractCourseCodeAndNumber(string courseCodeRaw)
     {
@@ -368,7 +384,10 @@ public class CourseService : ICourseService
             return courses;
         }
 
-        string[] lines = prerequisitesText.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        string[] lines = prerequisitesText.Split(
+            new[] { '\n', '\r' },
+            StringSplitOptions.RemoveEmptyEntries
+        );
 
         foreach (string line in lines)
         {
@@ -378,11 +397,13 @@ public class CourseService : ICourseService
                 (string courseCode, string courseNumber) = ExtractCourseCodeAndNumber(trimmedLine);
                 if (!string.IsNullOrEmpty(courseCode) && !string.IsNullOrEmpty(courseNumber))
                 {
-                    courses.Add(new CourseCodeDto
-                    {
-                        CourseCode = courseCode,
-                        CourseCodeNumber = courseNumber
-                    });
+                    courses.Add(
+                        new CourseCodeDto
+                        {
+                            CourseCode = courseCode,
+                            CourseCodeNumber = courseNumber,
+                        }
+                    );
                 }
             }
         }
@@ -396,7 +417,11 @@ public class CourseService : ICourseService
 
         foreach ((string key, string pattern) in sectionPatterns)
         {
-            Match match = Regex.Match(fullText, pattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            Match match = Regex.Match(
+                fullText,
+                pattern,
+                RegexOptions.Singleline | RegexOptions.IgnoreCase
+            );
             if (match.Success && match.Groups.Count > 1)
             {
                 sections[key] = match.Groups[1].Value.Trim();
@@ -407,8 +432,9 @@ public class CourseService : ICourseService
             }
         }
 
-        (string courseCode, string courseNumber) = ExtractCourseCodeAndNumber(sections["COURSE_CODE"]);
-
+        (string courseCode, string courseNumber) = ExtractCourseCodeAndNumber(
+            sections["COURSE_CODE"]
+        );
 
         return new ParsedSectionsDto
         {
@@ -423,13 +449,17 @@ public class CourseService : ICourseService
             CourseContent = sections["COURSE_CONTENT"],
             CilosRaw = sections["CILOS"],
             TlasRaw = sections["TLAS"],
-            AssessmentMethodsRaw = sections["ASSESSMENT_METHODS"]
+            AssessmentMethodsRaw = sections["ASSESSMENT_METHODS"],
         };
     }
 
     // this bro is to extract text from pdf and parse it into sections
-    public async Task<PdfParseResponseDto> ProcessPdfAsync(Stream pdfStream, string fileName, long fileSize,
-        AIProviderType? providerType = null)
+    public async Task<PdfParseResponseDto> ProcessPdfAsync(
+        Stream pdfStream,
+        string fileName,
+        long fileSize,
+        AIProviderType? providerType = null
+    )
     {
         using PdfDocument document = PdfDocument.Open(pdfStream);
         StringBuilder extractedText = new StringBuilder();
@@ -457,13 +487,16 @@ public class CourseService : ICourseService
             Size = fileSize,
             Pages = document.NumberOfPages,
             ExtractedText = fullText,
-            ParsedSections = parsedSections
+            ParsedSections = parsedSections,
         };
     }
 
     //TODO: I think it is possible to extract without AI, try later
     //Tabula-sharp
-    public async Task ExtractDataWithAI(ParsedSectionsDto parsedCourseData, AIProviderType? providerType = null)
+    public async Task ExtractDataWithAI(
+        ParsedSectionsDto parsedCourseData,
+        AIProviderType? providerType = null
+    )
     {
         IAIProvider provider = providerType.HasValue
             ? _aiProviderFactory.GetProvider(providerType.Value)
@@ -473,7 +506,9 @@ public class CourseService : ICourseService
             ? provider.ExtractCILOsAsync(parsedCourseData.CilosRaw)
             : Task.FromResult(new List<CILOs>());
 
-        Task<List<AssessmentMethod>>? assessmentTask = !string.IsNullOrWhiteSpace(parsedCourseData.AssessmentMethodsRaw)
+        Task<List<AssessmentMethod>>? assessmentTask = !string.IsNullOrWhiteSpace(
+            parsedCourseData.AssessmentMethodsRaw
+        )
             ? provider.ExtractAssessmentMethodsAsync(parsedCourseData.AssessmentMethodsRaw)
             : Task.FromResult(new List<AssessmentMethod>());
 
@@ -496,13 +531,14 @@ public class CourseService : ICourseService
             throw new ArgumentException($"Code with ID {createCourseDto.CodeId} not found");
         }
 
-        Course? existingCourse = await _context.Courses
-            .FirstOrDefaultAsync(c =>
-                c.CodeId == createCourseDto.CodeId && c.CourseNumber == createCourseDto.CourseNumber);
+        Course? existingCourse = await _context.Courses.FirstOrDefaultAsync(c =>
+            c.CodeId == createCourseDto.CodeId && c.CourseNumber == createCourseDto.CourseNumber
+        );
         if (existingCourse != null)
         {
             throw new InvalidOperationException(
-                $"Course with code {code.Tag} and number {createCourseDto.CourseNumber} already exists");
+                $"Course with code {code.Tag} and number {createCourseDto.CourseNumber} already exists"
+            );
         }
 
         Course course = new Course
@@ -512,7 +548,7 @@ public class CourseService : ICourseService
             CodeId = createCourseDto.CodeId,
             Credit = createCourseDto.Credit,
             Description = createCourseDto.Description,
-            IsActive = createCourseDto.IsActive
+            IsActive = createCourseDto.IsActive,
         };
 
         _context.Courses.Add(course);
@@ -521,15 +557,17 @@ public class CourseService : ICourseService
         {
             var distinctDeptIds = createCourseDto.DepartmentIds.Distinct().ToList();
 
-            var existingDeptIds = await _context.Departments
-                .Where(d => distinctDeptIds.Contains(d.Id))
+            var existingDeptIds = await _context
+                .Departments.Where(d => distinctDeptIds.Contains(d.Id))
                 .Select(d => d.Id)
                 .ToListAsync();
 
             var missingDepts = distinctDeptIds.Except(existingDeptIds).ToList();
             if (missingDepts.Any())
             {
-                throw new ArgumentException($"Department(s) with ID(s) {string.Join(',', missingDepts)} not found");
+                throw new ArgumentException(
+                    $"Department(s) with ID(s) {string.Join(',', missingDepts)} not found"
+                );
             }
 
             foreach (var deptId in distinctDeptIds)
@@ -537,7 +575,7 @@ public class CourseService : ICourseService
                 var courseDepartment = new CourseDepartment
                 {
                     Course = course,
-                    DepartmentId = deptId
+                    DepartmentId = deptId,
                 };
                 _context.CourseDepartments.Add(courseDepartment);
             }
@@ -547,24 +585,22 @@ public class CourseService : ICourseService
         {
             var distinctIds = createCourseDto.GroupIds.Distinct().ToList();
 
-            var existingGroupIds = await _context.CourseGroups
-                .Where(g => distinctIds.Contains(g.Id))
+            var existingGroupIds = await _context
+                .CourseGroups.Where(g => distinctIds.Contains(g.Id))
                 .Select(g => g.Id)
                 .ToListAsync();
 
             var missing = distinctIds.Except(existingGroupIds).ToList();
             if (missing.Any())
             {
-                throw new ArgumentException($"Course group(s) with ID(s) {string.Join(',', missing)} not found");
+                throw new ArgumentException(
+                    $"Course group(s) with ID(s) {string.Join(',', missing)} not found"
+                );
             }
 
             foreach (var gid in distinctIds)
             {
-                var groupCourse = new GroupCourse
-                {
-                    GroupId = gid,
-                    Course = course
-                };
+                var groupCourse = new GroupCourse { GroupId = gid, Course = course };
                 _context.GroupCourses.Add(groupCourse);
             }
         }
@@ -573,10 +609,13 @@ public class CourseService : ICourseService
         return course.Id;
     }
 
-    public async Task<int> CreateCourseVersionAsync(int courseId, CreateCourseVersionDto createVersionDto)
+    public async Task<int> CreateCourseVersionAsync(
+        int courseId,
+        CreateCourseVersionDto createVersionDto
+    )
     {
-        Course? course = await _context.Courses
-            .Include(c => c.CourseVersions)
+        Course? course = await _context
+            .Courses.Include(c => c.CourseVersions)
             .FirstOrDefaultAsync(c => c.Id == courseId);
 
         if (course == null)
@@ -595,7 +634,9 @@ public class CourseService : ICourseService
             var toTerm = await _context.Terms.FindAsync(createVersionDto.ToTermId.Value);
             if (toTerm == null)
             {
-                throw new ArgumentException($"Term with ID {createVersionDto.ToTermId.Value} not found");
+                throw new ArgumentException(
+                    $"Term with ID {createVersionDto.ToTermId.Value} not found"
+                );
             }
         }
 
@@ -616,7 +657,7 @@ public class CourseService : ICourseService
             FromTermId = createVersionDto.FromTermId,
             ToYear = createVersionDto.ToYear,
             ToTermId = createVersionDto.ToTermId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         _context.CourseVersions.Add(courseVersion);
@@ -625,8 +666,8 @@ public class CourseService : ICourseService
         {
             List<int> mediumIds = createVersionDto.MediumOfInstructionIds;
 
-            List<int> existingMediumIds = await _context.MediumOfInstructions
-                .Where(m => mediumIds.Contains(m.Id))
+            List<int> existingMediumIds = await _context
+                .MediumOfInstructions.Where(m => mediumIds.Contains(m.Id))
                 .Select(m => m.Id)
                 .ToListAsync();
 
@@ -634,7 +675,8 @@ public class CourseService : ICourseService
             if (missingMediums.Any())
             {
                 throw new ArgumentException(
-                    $"Medium of instruction(s) with ID(s) {string.Join(',', missingMediums)} not found");
+                    $"Medium of instruction(s) with ID(s) {string.Join(',', missingMediums)} not found"
+                );
             }
 
             foreach (var mediumId in mediumIds)
@@ -642,7 +684,7 @@ public class CourseService : ICourseService
                 var courseVersionMedium = new CourseVersionMedium
                 {
                     CourseVersion = courseVersion,
-                    MediumOfInstructionId = mediumId
+                    MediumOfInstructionId = mediumId,
                 };
                 _context.CourseVersionMediums.Add(courseVersionMedium);
             }
@@ -658,19 +700,20 @@ public class CourseService : ICourseService
                     Name = assessmentDto.Name,
                     Weighting = assessmentDto.Weighting,
                     Category = assessmentDto.Category,
-                    Description = assessmentDto.Description
+                    Description = assessmentDto.Description,
                 };
                 _context.CourseAssessments.Add(assessment);
             }
         }
 
-
         if (createVersionDto.PreRequisiteCourseVersionIds.Count > 0)
         {
-            List<int> distinctPreReqIds = createVersionDto.PreRequisiteCourseVersionIds.Distinct().ToList();
+            List<int> distinctPreReqIds = createVersionDto
+                .PreRequisiteCourseVersionIds.Distinct()
+                .ToList();
 
-            List<int> existingPreReqIds = await _context.CourseVersions
-                .Where(cv => distinctPreReqIds.Contains(cv.Id))
+            List<int> existingPreReqIds = await _context
+                .CourseVersions.Where(cv => distinctPreReqIds.Contains(cv.Id))
                 .Select(cv => cv.Id)
                 .ToListAsync();
 
@@ -678,7 +721,8 @@ public class CourseService : ICourseService
             if (missingPreReqs.Any())
             {
                 throw new ArgumentException(
-                    $"Course version(s) with ID(s) {string.Join(',', missingPreReqs)} not found for prerequisites");
+                    $"Course version(s) with ID(s) {string.Join(',', missingPreReqs)} not found for prerequisites"
+                );
             }
 
             foreach (int preReqId in distinctPreReqIds)
@@ -686,7 +730,7 @@ public class CourseService : ICourseService
                 CoursePreReq coursePreReq = new CoursePreReq
                 {
                     CourseVersion = courseVersion,
-                    RequiredCourseVersionId = preReqId
+                    RequiredCourseVersionId = preReqId,
                 };
                 _context.CoursePreReqs.Add(coursePreReq);
             }
@@ -694,10 +738,12 @@ public class CourseService : ICourseService
 
         if (createVersionDto.AntiRequisiteCourseVersionIds.Count > 0)
         {
-            List<int> distinctAntiReqIds = createVersionDto.AntiRequisiteCourseVersionIds.Distinct().ToList();
+            List<int> distinctAntiReqIds = createVersionDto
+                .AntiRequisiteCourseVersionIds.Distinct()
+                .ToList();
 
-            List<int> existingAntiReqIds = await _context.CourseVersions
-                .Where(cv => distinctAntiReqIds.Contains(cv.Id))
+            List<int> existingAntiReqIds = await _context
+                .CourseVersions.Where(cv => distinctAntiReqIds.Contains(cv.Id))
                 .Select(cv => cv.Id)
                 .ToListAsync();
 
@@ -705,7 +751,8 @@ public class CourseService : ICourseService
             if (missingAntiReqs.Any())
             {
                 throw new ArgumentException(
-                    $"Course version(s) with ID(s) {string.Join(',', missingAntiReqs)} not found for anti-requisites");
+                    $"Course version(s) with ID(s) {string.Join(',', missingAntiReqs)} not found for anti-requisites"
+                );
             }
 
             foreach (int antiReqId in distinctAntiReqIds)
@@ -713,7 +760,7 @@ public class CourseService : ICourseService
                 CourseAntiReq courseAntiReq = new CourseAntiReq
                 {
                     CourseVersion = courseVersion,
-                    ExcludedCourseVersionId = antiReqId
+                    ExcludedCourseVersionId = antiReqId,
                 };
                 _context.CourseAntiReqs.Add(courseAntiReq);
             }
@@ -727,25 +774,32 @@ public class CourseService : ICourseService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Embedding generation failed for course version {courseVersion.Id}: {ex.Message}");
+            Console.WriteLine(
+                $"Embedding generation failed for course version {courseVersion.Id}: {ex.Message}"
+            );
         }
 
         return courseVersion.Id;
     }
 
     //ya i dunno, so I can skip can only test this
-    private async Task GenerateCourseEmbeddings(Course course, CreateCourseVersionDto createVersionDto)
+    private async Task GenerateCourseEmbeddings(
+        Course course,
+        CreateCourseVersionDto createVersionDto
+    )
     {
         //This tag things is hard to have high similarity, so I set a low threshold
         IAIProvider aiProvider = ((AIProviderFactory)_aiProviderFactory).GetDefaultProvider();
 
-        var assessmentMethods = createVersionDto.Assessments.Select(a => new AssessmentMethod
-        {
-            Name = a.Name,
-            Weighting = a.Weighting,
-            Category = a.Category,
-            Description = a.Description ?? string.Empty
-        }).ToList();
+        var assessmentMethods = createVersionDto
+            .Assessments.Select(a => new AssessmentMethod
+            {
+                Name = a.Name,
+                Weighting = a.Weighting,
+                Category = a.Category,
+                Description = a.Description ?? string.Empty,
+            })
+            .ToList();
 
         //I think I should just based on the course code, as a domain tag.
 
@@ -756,7 +810,6 @@ public class CourseService : ICourseService
         // );
         //
         // var domainTags = await GetSimilarCourseTags(domainEmbedding, TagType.Domain);
-
 
         var skillsEmbedding = await aiProvider.CreateCourseSkillsTagEmbeddingAsync(
             aimsAndObjectives: createVersionDto.AimAndObjectives,
@@ -769,11 +822,7 @@ public class CourseService : ICourseService
         var skillsTags = await GetSimilarCourseTags(skillsEmbedding, TagType.Skill);
         foreach (var skillsTag in skillsTags)
         {
-            CourseTag courseTag = new CourseTag()
-            {
-                Course = course,
-                Tag = skillsTag
-            };
+            CourseTag courseTag = new CourseTag() { Course = course, Tag = skillsTag };
             _context.CourseTags.Add(courseTag);
         }
 
@@ -783,14 +832,13 @@ public class CourseService : ICourseService
             assessmentMethods: assessmentMethods
         );
 
-        var contentTypesTags = await GetSimilarCourseTags(contentTypesEmbedding, TagType.ContentType);
+        var contentTypesTags = await GetSimilarCourseTags(
+            contentTypesEmbedding,
+            TagType.ContentType
+        );
         foreach (var contentTypeTag in contentTypesTags)
         {
-            CourseTag courseTag = new CourseTag()
-            {
-                Course = course,
-                Tag = contentTypeTag
-            };
+            CourseTag courseTag = new CourseTag() { Course = course, Tag = contentTypeTag };
             _context.CourseTags.Add(courseTag);
         }
         await _context.SaveChangesAsync();
@@ -806,16 +854,14 @@ public class CourseService : ICourseService
     {
         //I tired to use one Query but it don't work, I think it need raw SQL
         //so let me do it in memory
-        var allTags = await _context.Tags
-            .Where(t => t.TagType == tagType)
-            .ToListAsync();
+        var allTags = await _context.Tags.Where(t => t.TagType == tagType).ToListAsync();
 
         var scored = allTags
             .Where(t => t.Embedding != null)
             .Select(t => new
             {
                 Tag = t,
-                Dot = DotProduct(t.Embedding, queryVector) // HIGHER is more similar
+                Dot = EmbeddingHelper.DotProduct(t.Embedding!, queryVector), // HIGHER is more similar
             })
             .OrderByDescending(x => x.Dot)
             .Take(topK)
@@ -824,26 +870,15 @@ public class CourseService : ICourseService
         return scored.Select(x => x.Tag).ToList();
     }
 
-    public static double DotProduct(Vector a, Vector b)
-    {
-        //openai embedding is normalized to length 1, so dot product is cosine similarity
-        var aSpan = a.Memory.Span;
-        var bSpan = b.Memory.Span;
-
-        if (aSpan.Length != bSpan.Length)
-            throw new ArgumentException("Vectors must have the same length.");
-
-        double sum = 0;
-        for (int i = 0; i < aSpan.Length; i++)
-            sum += (double)aSpan[i] * bSpan[i];
-
-        return sum;
-    }
-
-
-    public async Task<TimetableResponseDto> GetTimetableAsync(string studentId, bool excludeEnrolled = true,
-    bool includeFailedRequirementCourses = false,
-        int? year = null, int? termId = null, int? courseGroupId = null, int? categoryGroupId = null)
+    public async Task<TimetableResponseDto> GetTimetableAsync(
+        string studentId,
+        bool excludeEnrolled = true,
+        bool includeFailedRequirementCourses = false,
+        int? year = null,
+        int? termId = null,
+        int? courseGroupId = null,
+        int? categoryGroupId = null
+    )
     {
         int defaultYear = year ?? _factService.GetCurrentAcademicYear();
         int defaultTermId = termId ?? _factService.GetCurrentSemester();
@@ -862,8 +897,10 @@ public class CourseService : ICourseService
 
             if (courseGroupId.HasValue)
             {
-                var coursesInGroup = await _context.GroupCourses
-                    .Where(gc => gc.GroupId == courseGroupId.Value && gc.CourseId.HasValue)
+                var coursesInGroup = await _context
+                    .GroupCourses.Where(gc =>
+                        gc.GroupId == courseGroupId.Value && gc.CourseId.HasValue
+                    )
                     .Select(gc => gc.CourseId!.Value)
                     .ToListAsync();
 
@@ -872,15 +909,17 @@ public class CourseService : ICourseService
                     allowedCourseIds.Add(courseId);
                 }
 
-                var codesInGroup = await _context.GroupCourses
-                    .Where(gc => gc.GroupId == courseGroupId.Value && gc.CodeId.HasValue)
+                var codesInGroup = await _context
+                    .GroupCourses.Where(gc =>
+                        gc.GroupId == courseGroupId.Value && gc.CodeId.HasValue
+                    )
                     .Select(gc => gc.CodeId!.Value)
                     .ToListAsync();
 
                 if (codesInGroup.Any())
                 {
-                    var coursesByCode = await _context.Courses
-                        .Where(c => codesInGroup.Contains(c.CodeId))
+                    var coursesByCode = await _context
+                        .Courses.Where(c => codesInGroup.Contains(c.CodeId))
                         .Select(c => c.Id)
                         .ToListAsync();
 
@@ -893,15 +932,19 @@ public class CourseService : ICourseService
 
             if (categoryGroupId.HasValue)
             {
-                var groupsInCategory = await _context.CategoryGroups
-                    .Where(cg => cg.CategoryId == categoryGroupId.Value && cg.GroupId.HasValue)
+                var groupsInCategory = await _context
+                    .CategoryGroups.Where(cg =>
+                        cg.CategoryId == categoryGroupId.Value && cg.GroupId.HasValue
+                    )
                     .Select(cg => cg.GroupId!.Value)
                     .ToListAsync();
 
                 if (groupsInCategory.Any())
                 {
-                    var coursesInCategoryGroup = await _context.GroupCourses
-                        .Where(gc => groupsInCategory.Contains(gc.GroupId) && gc.CourseId.HasValue)
+                    var coursesInCategoryGroup = await _context
+                        .GroupCourses.Where(gc =>
+                            groupsInCategory.Contains(gc.GroupId) && gc.CourseId.HasValue
+                        )
                         .Select(gc => gc.CourseId!.Value)
                         .ToListAsync();
 
@@ -910,15 +953,17 @@ public class CourseService : ICourseService
                         allowedCourseIds.Add(courseId);
                     }
 
-                    var codesInCategoryGroup = await _context.GroupCourses
-                        .Where(gc => groupsInCategory.Contains(gc.GroupId) && gc.CodeId.HasValue)
+                    var codesInCategoryGroup = await _context
+                        .GroupCourses.Where(gc =>
+                            groupsInCategory.Contains(gc.GroupId) && gc.CodeId.HasValue
+                        )
                         .Select(gc => gc.CodeId!.Value)
                         .ToListAsync();
 
                     if (codesInCategoryGroup.Any())
                     {
-                        var coursesByCode = await _context.Courses
-                            .Where(c => codesInCategoryGroup.Contains(c.CodeId))
+                        var coursesByCode = await _context
+                            .Courses.Where(c => codesInCategoryGroup.Contains(c.CodeId))
                             .Select(c => c.Id)
                             .ToListAsync();
 
@@ -935,13 +980,13 @@ public class CourseService : ICourseService
 
         if (excludeEnrolled)
         {
-            var enrolledCourseIds = await _context.StudentCourses
-                .Where(sc => sc.StudentId == studentId)
+            var enrolledCourseIds = await _context
+                .StudentCourses.Where(sc => sc.StudentId == studentId)
                 .Select(sc => sc.CourseId)
                 .ToListAsync();
 
-            var query = _context.CourseSections
-                .Where(sc => sc.Year == defaultYear && sc.TermId == defaultTermId)
+            var query = _context
+                .CourseSections.Where(sc => sc.Year == defaultYear && sc.TermId == defaultTermId)
                 .Where(sc => !enrolledCourseIds.Contains(sc.CourseVersion.CourseId));
 
             if (allowedCourseIds != null && allowedCourseIds.Any())
@@ -951,20 +996,21 @@ public class CourseService : ICourseService
 
             sections = await query
                 .Include(cs => cs.CourseVersion)
-                .ThenInclude(cv => cv.Course)
-                .ThenInclude(c => c.Code)
+                    .ThenInclude(cv => cv.Course)
+                        .ThenInclude(c => c.Code)
                 .Include(cs => cs.CourseVersion.Prerequisites)
-                .ThenInclude(pr => pr.RequiredCourseVersion)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
                 .Include(cs => cs.CourseVersion.AntiRequisites)
-                .ThenInclude(ar => ar.ExcludedCourseVersion)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
                 .Include(cs => cs.CourseMeetings)
                 .Include(cs => cs.Term)
                 .ToListAsync();
         }
         else
         {
-            var query = _context.CourseSections
-                .Where(cs => cs.Year == defaultYear && cs.TermId == defaultTermId);
+            var query = _context.CourseSections.Where(cs =>
+                cs.Year == defaultYear && cs.TermId == defaultTermId
+            );
 
             if (allowedCourseIds != null && allowedCourseIds.Any())
             {
@@ -973,55 +1019,59 @@ public class CourseService : ICourseService
 
             sections = await query
                 .Include(cs => cs.CourseVersion)
-                .ThenInclude(cv => cv.Course)
-                .ThenInclude(c => c.Code)
+                    .ThenInclude(cv => cv.Course)
+                        .ThenInclude(c => c.Code)
                 .Include(cs => cs.CourseVersion.Prerequisites)
-                .ThenInclude(pr => pr.RequiredCourseVersion)
+                    .ThenInclude(pr => pr.RequiredCourseVersion)
                 .Include(cs => cs.CourseVersion.AntiRequisites)
-                .ThenInclude(ar => ar.ExcludedCourseVersion)
+                    .ThenInclude(ar => ar.ExcludedCourseVersion)
                 .Include(cs => cs.CourseMeetings)
                 .Include(cs => cs.Term)
                 .ToListAsync();
         }
         if (!includeFailedRequirementCourses)
         {
-            var studentCompletedCourseIds = await _context.StudentCourses
-                .Where(sc => sc.StudentId == studentId)
+            var studentCompletedCourseIds = await _context
+                .StudentCourses.Where(sc => sc.StudentId == studentId)
                 .Select(sc => sc.CourseId)
                 .ToListAsync();
 
-            sections = sections.Where(section =>
-            {
-                var courseVersion = section.CourseVersion;
-
-                if (courseVersion.Prerequisites.Any())
+            sections = sections
+                .Where(section =>
                 {
-                    var requiredCourseIds = courseVersion.Prerequisites
-                        .Select(pr => pr.RequiredCourseVersion.CourseId)
-                        .ToList();
+                    var courseVersion = section.CourseVersion;
 
-                    var hasAllPrerequisites = requiredCourseIds.All(reqId =>
-                        studentCompletedCourseIds.Contains(reqId));
+                    if (courseVersion.Prerequisites.Any())
+                    {
+                        var requiredCourseIds = courseVersion
+                            .Prerequisites.Select(pr => pr.RequiredCourseVersion.CourseId)
+                            .ToList();
 
-                    if (!hasAllPrerequisites)
-                        return false;
-                }
+                        var hasAllPrerequisites = requiredCourseIds.All(reqId =>
+                            studentCompletedCourseIds.Contains(reqId)
+                        );
 
-                if (courseVersion.AntiRequisites.Any())
-                {
-                    var excludedCourseIds = courseVersion.AntiRequisites
-                        .Select(ar => ar.ExcludedCourseVersion.CourseId)
-                        .ToList();
+                        if (!hasAllPrerequisites)
+                            return false;
+                    }
 
-                    var hasAnyAntiRequisites = excludedCourseIds.Any(excId =>
-                        studentCompletedCourseIds.Contains(excId));
+                    if (courseVersion.AntiRequisites.Any())
+                    {
+                        var excludedCourseIds = courseVersion
+                            .AntiRequisites.Select(ar => ar.ExcludedCourseVersion.CourseId)
+                            .ToList();
 
-                    if (hasAnyAntiRequisites)
-                        return false;
-                }
+                        var hasAnyAntiRequisites = excludedCourseIds.Any(excId =>
+                            studentCompletedCourseIds.Contains(excId)
+                        );
 
-                return true;
-            }).ToList();
+                        if (hasAnyAntiRequisites)
+                            return false;
+                    }
+
+                    return true;
+                })
+                .ToList();
         }
 
         List<TimetableEntryDto> entries = sections
@@ -1034,7 +1084,7 @@ public class CourseService : ICourseService
                 CourseCode = $"{section.CourseVersion.Course.Code.Tag}{section.CourseVersion.Course.CourseNumber}",
                 CodeTag = section.CourseVersion.Course.Code.Tag,
                 CourseNumber = section.CourseVersion.Course.CourseNumber,
-                Credit = section.CourseVersion.Course.Credit
+                Credit = section.CourseVersion.Course.Credit,
             })
             .Select(group => new TimetableEntryDto
             {
@@ -1046,19 +1096,23 @@ public class CourseService : ICourseService
                 Credit = group.Key.Credit,
                 VersionId = group.Key.CourseVersionId,
                 VersionNumber = group.Key.VersionNumber,
-                Sections = group.Select(section => new TimetableSectionDto
-                {
-                    SectionId = section.Id,
-                    SectionNumber = section.SectionNumber,
-                    Meetings = section.CourseMeetings.Select(m => new TimetableMeetingDto
+                Sections = group
+                    .Select(section => new TimetableSectionDto
                     {
-                        Id = m.Id,
-                        MeetingType = m.MeetingType,
-                        Day = m.Day,
-                        StartTime = m.StartTime,
-                        EndTime = m.EndTime
-                    }).ToList()
-                }).ToList()
+                        SectionId = section.Id,
+                        SectionNumber = section.SectionNumber,
+                        Meetings = section
+                            .CourseMeetings.Select(m => new TimetableMeetingDto
+                            {
+                                Id = m.Id,
+                                MeetingType = m.MeetingType,
+                                Day = m.Day,
+                                StartTime = m.StartTime,
+                                EndTime = m.EndTime,
+                            })
+                            .ToList(),
+                    })
+                    .ToList(),
             })
             .ToList();
 
@@ -1066,7 +1120,8 @@ public class CourseService : ICourseService
         {
             Year = defaultYear,
             Term = term.Name,
-            Entries = entries
+            Entries = entries,
         };
     }
 }
+
