@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { components, paths } from "~/API/schema";
 import { Calendar } from "lucide-vue-next";
+
 type tableResponse = components['schemas']['TimetableResponseDto']
 // 1 section has many meetings
 type Section = components['schemas']['TimetableSectionDto']
@@ -19,6 +20,35 @@ const filterDialogOpen = ref(false);
 const blockTimeDialogOpen = ref(false);
 
 const selectedSections = ref<Section[]>([]);
+
+interface BlockTimeItem {
+  id: string;
+  startTime: number;
+  endTime: number;
+}
+
+type BlockTimes = Record<number, BlockTimeItem[]>;
+
+const blockTimes = ref<BlockTimes>({});
+
+const route = useRoute();
+
+type DecodedTimetable = {
+  sections: Section[];
+  blockTimes: BlockTimes;
+};
+
+if (route.query.tb) {
+  const uncode = atob(route.query.tb as string);
+
+  try {
+    const decoded: DecodedTimetable = JSON.parse(uncode);
+    selectedSections.value = decoded.sections;
+    blockTimes.value = decoded.blockTimes;
+  } catch (e) {
+    console.error('Failed to decode timetable from URL:', e);
+  }
+}
 
 const handleAddSection = (section: Section) => {
   const course = availableItems.value?.entries?.find((c) => c.sections!.some((s) => s.sectionId === section.sectionId))
@@ -59,15 +89,7 @@ const totalCredits = computed(() => {
   }, 0);
 });
 
-interface BlockTimeItem {
-  id: string;
-  startTime: number;
-  endTime: number;
-}
 
-type BlockTimes = Record<number, BlockTimeItem[]>;
-
-const blockTimes = ref<BlockTimes>({});
 
 const handleAddBlockTime = (day: number, items: BlockTimeItem[]) => {
   blockTimes.value[day] = items;
@@ -78,6 +100,18 @@ const handleDeleteBlockTime = (day: number, itemId: string) => {
     blockTimes.value[day] = blockTimes.value[day].filter((item) => item.id !== itemId);
   }
 };
+
+watch([selectedSections, blockTimes], () => {
+  const timetableData: DecodedTimetable = {
+    sections: selectedSections.value,
+    blockTimes: blockTimes.value,
+  };
+  const encoded = btoa(JSON.stringify(timetableData));
+  console.log('Encoded timetable data:', encoded);
+  const query = { ...route.query, tb: encoded };
+  useRouter().replace({ query });
+}, { deep: true });
+
 </script>
 
 <template>
