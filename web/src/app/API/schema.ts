@@ -106,7 +106,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chat": {
+    "/api/chat": {
         parameters: {
             query?: never;
             header?: never;
@@ -175,7 +175,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chat/test": {
+    "/api/chat/test": {
         parameters: {
             query?: never;
             header?: never;
@@ -221,7 +221,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chat/{roomId}": {
+    "/api/chat/{roomId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -282,74 +282,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/chat/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": string;
-                    "text/json": string;
-                    "application/*+json": string;
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["SendMessageResponseDto"];
-                        "application/json": components["schemas"]["SendMessageResponseDto"];
-                        "text/json": components["schemas"]["SendMessageResponseDto"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "text/plain": components["schemas"]["ProblemDetails"];
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "text/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/chat/{roomId}/result/{messageId}": {
+    "/api/chat/{roomId}/result/{messageId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -374,9 +307,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["MessageResultResponseDto"];
-                        "application/json": components["schemas"]["MessageResultResponseDto"];
-                        "text/json": components["schemas"]["MessageResultResponseDto"];
+                        "text/plain": components["schemas"]["MessageResponseDto"];
+                        "application/json": components["schemas"]["MessageResponseDto"];
+                        "text/json": components["schemas"]["MessageResponseDto"];
                     };
                 };
                 /** @description Bad Request */
@@ -416,6 +349,73 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendMessageRequestDto"];
+                    "text/json": components["schemas"]["SendMessageRequestDto"];
+                    "application/*+json": components["schemas"]["SendMessageRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SendMessageResponseDto"];
+                        "application/json": components["schemas"]["SendMessageResponseDto"];
+                        "text/json": components["schemas"]["SendMessageResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1560,16 +1560,14 @@ export interface components {
         };
         MessageResponseDto: {
             id?: string;
-            role?: string;
+            role?: components["schemas"]["MessageRole"];
             content?: string;
-            status?: string;
+            status?: components["schemas"]["MessageStatus"];
             /** Format: date-time */
             createdAt?: string;
         };
-        MessageResultResponseDto: {
-            status?: string;
-            content?: string;
-        };
+        MessageRole: number;
+        MessageStatus: number;
         ParsedSectionsDto: {
             courseTitle?: string;
             courseCodeNumber?: string;
@@ -1652,6 +1650,9 @@ export interface components {
             /** Format: int32 */
             creditsCompleted?: number | string;
             termName?: string;
+        };
+        SendMessageRequestDto: {
+            message: string;
         };
         SendMessageResponseDto: {
             generatedId?: string;
