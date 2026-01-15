@@ -9,7 +9,7 @@ using Backend.Models;
 namespace Backend.Controllers
 {
     [ApiController]
-    [Route("chat")]
+    [Route("api/chat")]
     [Authorize]
     //not doing websocket here, I try to use SSE later, i dunno how to. Http endpoints is good enough for chatbot.
     public class ChatController : ControllerBase
@@ -62,7 +62,7 @@ namespace Backend.Controllers
             var response = await aiProvider.GenerateChatResponseAsync(chatHistory);
             return Ok(new { response });
         }
-        
+
 
         //ya just Create a simple room first
         [HttpPost]
@@ -79,7 +79,7 @@ namespace Backend.Controllers
             var roomId = await _chatProvider.CreateRoomAsync(userId);
             return Ok(new { roomId = roomId.ToString() });
         }
-        
+
         [HttpGet("{roomId}")]
         [ProducesResponseType(typeof(ChatHistoryResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -100,13 +100,13 @@ namespace Backend.Controllers
             var history = await _chatProvider.GetChatHistoryAsync(guid, userId);
             return Ok(history);
         }
-        
+
         //request the generation and return the generated message id
         [HttpPost("{id}")]
         [ProducesResponseType(typeof(SendMessageResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> SendMessage(string id, [FromBody] string request)
+        public async Task<IActionResult> SendMessage(string id, [FromBody] SendMessageRequestDto request)
         {
             if (!Guid.TryParse(id, out var roomId))
             {
@@ -118,13 +118,14 @@ namespace Backend.Controllers
                 return Unauthorized();
             }
 
-            var generatedMessageId = await _chatProvider.SendMessageToRoomAsync(roomId, request, userId);
+            var generatedMessageId = await _chatProvider.SendMessageToRoomAsync(roomId, request.Message, userId);
             return Ok(new { generatedId = generatedMessageId.ToString() });
         }
 
         //SEE later
+        //TODO: SEE LATER, POLLING FOR NOW
         [HttpGet("{roomId}/result/{messageId}")]
-        [ProducesResponseType(typeof(MessageResultResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MessageResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -143,12 +144,8 @@ namespace Backend.Controllers
 
             try
             {
-                var (status, content) = await _chatProvider.GetMessageResultAsync(roomGuid, msgGuid, userId);
-                return Ok(new 
-                { 
-                    status = status,
-                    content = content
-                });
+                var messageResponse = await _chatProvider.GetMessageResultAsync(roomGuid, msgGuid, userId);
+                return Ok(messageResponse);
             }
             catch (InvalidOperationException ex)
             {
