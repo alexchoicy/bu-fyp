@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { components, paths } from "~/API/schema";
 import { Calendar } from "lucide-vue-next";
+import { base64UrlDecodeString, base64UrlEncodeString } from "~/lib/base64utils";
 
 type tableResponse = components['schemas']['TimetableResponseDto']
 // 1 section has many meetings
@@ -39,9 +40,8 @@ type DecodedTimetable = {
 };
 
 if (route.query.tb) {
-  const uncode = atob(route.query.tb as string);
-
   try {
+    const uncode = base64UrlDecodeString(route.query.tb as string);
     const decoded: DecodedTimetable = JSON.parse(uncode);
     selectedSections.value = decoded.sections;
     blockTimes.value = decoded.blockTimes;
@@ -49,6 +49,17 @@ if (route.query.tb) {
     console.error('Failed to decode timetable from URL:', e);
   }
 }
+
+watch([selectedSections, blockTimes], () => {
+  const timetableData: DecodedTimetable = {
+    sections: selectedSections.value,
+    blockTimes: blockTimes.value,
+  };
+  const encoded = base64UrlEncodeString(JSON.stringify(timetableData));
+  console.log('Encoded timetable data:', encoded);
+  const query = { ...route.query, tb: encoded };
+  useRouter().replace({ query });
+}, { deep: true });
 
 const handleAddSection = (section: Section) => {
   const course = availableItems.value?.entries?.find((c) => c.sections!.some((s) => s.sectionId === section.sectionId))
@@ -101,16 +112,7 @@ const handleDeleteBlockTime = (day: number, itemId: string) => {
   }
 };
 
-watch([selectedSections, blockTimes], () => {
-  const timetableData: DecodedTimetable = {
-    sections: selectedSections.value,
-    blockTimes: blockTimes.value,
-  };
-  const encoded = btoa(JSON.stringify(timetableData));
-  console.log('Encoded timetable data:', encoded);
-  const query = { ...route.query, tb: encoded };
-  useRouter().replace({ query });
-}, { deep: true });
+
 
 </script>
 
