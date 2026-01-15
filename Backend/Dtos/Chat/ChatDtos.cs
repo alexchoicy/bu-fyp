@@ -1,4 +1,6 @@
-﻿namespace Backend.Dtos.Chat;
+﻿using Backend.Models;
+
+namespace Backend.Dtos.Chat;
 
 public class CreateRoomResponseDto
 {
@@ -8,9 +10,9 @@ public class CreateRoomResponseDto
 public class MessageResponseDto
 {
     public string Id { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
+    public MessageRole Role { get; set; } = MessageRole.User;
     public string Content { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public MessageStatus Status { get; set; } = MessageStatus.Pending;
     public DateTime CreatedAt { get; set; }
 }
 
@@ -22,11 +24,5 @@ public class ChatHistoryResponseDto
 public class SendMessageResponseDto
 {
     public string GeneratedId { get; set; } = string.Empty;
-}
-
-public class MessageResultResponseDto
-{
-    public string Status { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
 }
 

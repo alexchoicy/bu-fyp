@@ -1,7 +1,9 @@
 ﻿using Backend.Data;
+using Backend.Dtos.Chat;
 using Backend.Models;
 using Backend.Services.AI;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Services.Chat;
 
@@ -9,12 +11,14 @@ public class ChatProvider
 {
     private readonly AppDbContext _dbContext;
     private readonly IAIProviderFactory _aiProviderFactory;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ChatProvider> _logger;
 
-    public ChatProvider(AppDbContext dbContext, IAIProviderFactory aiProviderFactory, ILogger<ChatProvider> logger)
+    public ChatProvider(AppDbContext dbContext, IAIProviderFactory aiProviderFactory, IServiceScopeFactory scopeFactory, ILogger<ChatProvider> logger)
     {
         _dbContext = dbContext;
         _aiProviderFactory = aiProviderFactory;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -94,13 +98,29 @@ public class ChatProvider
         {
             _logger.LogInformation("Starting background generation for message {MessageId}", pendingMessageId);
 
-            var messages = await GetChatHistoryAsync(roomId, userId);
-            
-            var aiProvider = _aiProviderFactory.GetDefaultProvider();
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var aiProviderFactory = scope.ServiceProvider.GetRequiredService<IAIProviderFactory>();
 
-            var response = await aiProvider.GenerateChatResponseAsync(messages.ToList());
+            var messages = await dbContext.Conversations
+                .Where(c => c.Id == roomId && c.UserId == userId)
+                .SelectMany(c => c.Messages)
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync();
 
-            await UpdateMessageAsync(pendingMessageId, response.Last().Content.ToString(), MessageStatus.Complete);
+            if (!messages.Any())
+            {
+                _logger.LogWarning("No messages found for conversation {ConversationId} when generating response", roomId);
+                await UpdateMessageAsync(pendingMessageId, string.Empty, MessageStatus.Failed);
+                return;
+            }
+
+            var aiProvider = aiProviderFactory.GetDefaultProvider();
+
+            var response = await aiProvider.GenerateChatResponseAsync(messages);
+            var content = response.LastOrDefault()?.Content[0].Text ?? string.Empty;
+
+            await UpdateMessageAsync(pendingMessageId, content, MessageStatus.Complete);
 
             _logger.LogInformation("Completed generation for message {MessageId}", pendingMessageId);
         }
@@ -133,8 +153,11 @@ public class ChatProvider
 
     private async Task UpdateMessageAsync(Guid messageId, string content, MessageStatus status)
     {
-        var message = await _dbContext.Messages.FindAsync(messageId);
-        
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var message = await dbContext.Messages.FindAsync(messageId);
+
         if (message is null)
         {
             throw new InvalidOperationException($"Message {messageId} not found");
@@ -143,30 +166,31 @@ public class ChatProvider
         message.Content = content;
         message.Status = status;
 
-        _dbContext.Messages.Update(message);
-        await _dbContext.SaveChangesAsync();
+        dbContext.Messages.Update(message);
+        await dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Updated message {MessageId} with status {Status}", messageId, status);
     }
 
-    public async Task<(MessageStatus Status, string Content)> GetMessageResultAsync(Guid roomId, Guid messageId, string userId)
+    public async Task<MessageResponseDto> GetMessageResultAsync(Guid roomId, Guid messageId, string userId)
     {
-        var conversation = await _dbContext.Conversations
-            .Include(c => c.Messages)
-            .FirstOrDefaultAsync(c => c.Id == roomId && c.UserId == userId);
+        var message = await _dbContext.Messages
+            .Include(m => m.Conversation)
+            .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == roomId && m.Conversation.UserId == userId);
 
-        if (conversation is null)
-        {
-            throw new InvalidOperationException("Conversation not found or access denied");
-        }
-
-        var message = conversation.Messages.FirstOrDefault(m => m.Id == messageId);
 
         if (message is null)
         {
             throw new InvalidOperationException("Message not found in conversation");
         }
 
-        return (message.Status, message.Content);
+        return new MessageResponseDto
+        {
+            Id = message.Id.ToString(),
+            Role = message.Role,
+            Content = message.Content,
+            Status = message.Status,
+            CreatedAt = message.CreatedAt
+        };
     }
 }
