@@ -6,7 +6,7 @@ type Message = components["schemas"]["MessageResponseDto"]
 
 enum Roles {
   User,
-  Assistance,
+  Assistant,
 }
 
 enum MessageStatus {
@@ -124,7 +124,7 @@ const onSend = async () => {
             <div />
             <div>
               <InputGroupButton variant="default" class="rounded-full" size="icon-sm"
-                :disabled="input && input?.length < 0 && lastMessageId === ''" @click="onSend">
+                :disabled="!input || input.length === 0 || lastMessageId === ''" @click="onSend">
                 <ArrowUp class="size-4" />
                 <span class="sr-only">Send</span>
               </InputGroupButton>

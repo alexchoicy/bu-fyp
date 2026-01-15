@@ -3,7 +3,6 @@ using Backend.Dtos.Courses;
 using Backend.Dtos.Facts;
 using Backend.Dtos.Policy;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic;
 using OpenAI.Chat;
 using Pgvector;
 
@@ -363,7 +362,7 @@ public static class OpenAIFunctions
             You help students with information about courses, programmes, requirements, and academic guidance.
             Provide clear, concise, and accurate responses. If you are unable to find the information requested by the user, respond with: ""I'm sorry, I can't find related information.
             You should mostly call {nameof(DatabaseQueries.GetPoliciesByQuery)} to retrieve relevant policy sections to answer user queries about university policies.
-            Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Garde related info, you should check if the Grade is updated by user in the AcademicYear and Term.
+            Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Grade related info, you should check if the Grade is updated by user in the AcademicYear and Term.
             Terms ID are as follows:
                 - Term ID 1: Semester 1
                 - Term ID 2: Semester 2
