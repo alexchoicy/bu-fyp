@@ -8,6 +8,7 @@ using Backend.Services.Facts;
 using Backend.Services.Programmes;
 using Backend.Services.User;
 using Backend.Services.Chat;
+using Backend.Services.Timetable;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -92,6 +93,7 @@ builder.Services.AddScoped<IFactService, FactService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProgrammeService, ProgrammeService>();
 builder.Services.AddScoped<IEvaluateRule, EvaluateRule>();
+builder.Services.AddScoped<ITimetableService, TimetableService>();
 
 var app = builder.Build();
 
