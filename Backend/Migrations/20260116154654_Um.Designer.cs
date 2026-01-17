@@ -14,8 +14,8 @@ using Pgvector;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251231125015_chatMessage")]
-    partial class chatMessage
+    [Migration("20260116154654_Um")]
+    partial class Um
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -711,6 +711,55 @@ namespace Backend.Migrations
                     b.ToTable("programme_categories");
                 });
 
+            modelBuilder.Entity("Backend.Models.ProgrammeSuggestedCourseSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CourseId")
+                        .HasColumnType("integer")
+                        .HasColumnName("course_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal?>("Credits")
+                        .HasColumnType("numeric")
+                        .HasColumnName("credits");
+
+                    b.Property<bool>("IsFreeElective")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_free_elective");
+
+                    b.Property<int>("ProgrammeVersionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("programme_version_id");
+
+                    b.Property<int>("StudyYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("study_year");
+
+                    b.Property<int>("TermId")
+                        .HasColumnType("integer")
+                        .HasColumnName("term_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("TermId");
+
+                    b.HasIndex("ProgrammeVersionId", "StudyYear", "TermId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("programme_suggested_courses_schedule");
+                });
+
             modelBuilder.Entity("Backend.Models.ProgrammeVersion", b =>
                 {
                     b.Property<int>("Id")
@@ -892,6 +941,14 @@ namespace Backend.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("EntryAcedmicYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_acedmic_year");
+
+                    b.Property<int>("EntryYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_year");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -1360,6 +1417,32 @@ namespace Backend.Migrations
                     b.Navigation("ProgrammeVersion");
                 });
 
+            modelBuilder.Entity("Backend.Models.ProgrammeSuggestedCourseSchedule", b =>
+                {
+                    b.HasOne("Backend.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Backend.Models.ProgrammeVersion", "ProgrammeVersion")
+                        .WithMany("SuggestedCourseSchedules")
+                        .HasForeignKey("ProgrammeVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Term", "Term")
+                        .WithMany()
+                        .HasForeignKey("TermId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("ProgrammeVersion");
+
+                    b.Navigation("Term");
+                });
+
             modelBuilder.Entity("Backend.Models.ProgrammeVersion", b =>
                 {
                     b.HasOne("Backend.Models.Programme", "Programme")
@@ -1554,6 +1637,8 @@ namespace Backend.Migrations
                     b.Navigation("ProgrammeCategories");
 
                     b.Navigation("StudentProgrammes");
+
+                    b.Navigation("SuggestedCourseSchedules");
                 });
 
             modelBuilder.Entity("Backend.Models.Tag", b =>

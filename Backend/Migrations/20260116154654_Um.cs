@@ -10,7 +10,7 @@ using Pgvector;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class Um : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -38,6 +38,8 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
                     name = table.Column<string>(type: "text", nullable: false),
+                    entry_acedmic_year = table.Column<int>(type: "integer", nullable: false),
+                    entry_year = table.Column<int>(type: "integer", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -297,6 +299,25 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Conversations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Conversations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Conversations_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "courses",
                 columns: table => new
                 {
@@ -390,6 +411,29 @@ namespace Backend.Migrations
                         column: x => x.programme_id,
                         principalTable: "programmes",
                         principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Messages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Model = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ConversationId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Messages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Messages_Conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "Conversations",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -576,6 +620,43 @@ namespace Backend.Migrations
                         principalTable: "programme_versions",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "programme_suggested_courses_schedule",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    programme_version_id = table.Column<int>(type: "integer", nullable: false),
+                    study_year = table.Column<int>(type: "integer", nullable: false),
+                    term_id = table.Column<int>(type: "integer", nullable: false),
+                    course_id = table.Column<int>(type: "integer", nullable: true),
+                    is_free_elective = table.Column<bool>(type: "boolean", nullable: false),
+                    credits = table.Column<decimal>(type: "numeric", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_programme_suggested_courses_schedule", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_programme_suggested_courses_schedule_courses_course_id",
+                        column: x => x.course_id,
+                        principalTable: "courses",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_programme_suggested_courses_schedule_programme_versions_pro~",
+                        column: x => x.programme_version_id,
+                        principalTable: "programme_versions",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_programme_suggested_courses_schedule_terms_term_id",
+                        column: x => x.term_id,
+                        principalTable: "terms",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -802,6 +883,11 @@ namespace Backend.Migrations
                 column: "group_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Conversations_UserId",
+                table: "Conversations",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_course_anti_reqs_excluded_course_version_id",
                 table: "course_anti_reqs",
                 column: "excluded_course_version_id");
@@ -892,6 +978,11 @@ namespace Backend.Migrations
                 column: "group_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Messages_ConversationId",
+                table: "Messages",
+                column: "ConversationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_policy_section_chunks_policy_section_key",
                 table: "policy_section_chunks",
                 column: "policy_section_key");
@@ -900,6 +991,22 @@ namespace Backend.Migrations
                 name: "IX_programme_categories_category_id",
                 table: "programme_categories",
                 column: "category_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_programme_suggested_courses_schedule_course_id",
+                table: "programme_suggested_courses_schedule",
+                column: "course_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_programme_suggested_courses_schedule_programme_version_id_s~",
+                table: "programme_suggested_courses_schedule",
+                columns: new[] { "programme_version_id", "study_year", "term_id", "course_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_programme_suggested_courses_schedule_term_id",
+                table: "programme_suggested_courses_schedule",
+                column: "term_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_programme_versions_programme_id",
@@ -968,10 +1075,16 @@ namespace Backend.Migrations
                 name: "group_courses");
 
             migrationBuilder.DropTable(
+                name: "Messages");
+
+            migrationBuilder.DropTable(
                 name: "policy_section_chunks");
 
             migrationBuilder.DropTable(
                 name: "programme_categories");
+
+            migrationBuilder.DropTable(
+                name: "programme_suggested_courses_schedule");
 
             migrationBuilder.DropTable(
                 name: "student_courses");
@@ -998,19 +1111,22 @@ namespace Backend.Migrations
                 name: "course_groups");
 
             migrationBuilder.DropTable(
+                name: "Conversations");
+
+            migrationBuilder.DropTable(
                 name: "policy_sections");
 
             migrationBuilder.DropTable(
                 name: "categories");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
-
-            migrationBuilder.DropTable(
                 name: "programme_versions");
 
             migrationBuilder.DropTable(
                 name: "course_versions");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "programmes");

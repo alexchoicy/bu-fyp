@@ -37,10 +37,13 @@ namespace Backend.Data.Seed
             {
                 studentUser = new User
                 {
+                    //This user year 2 student
                     UserName = "student",
                     Email = studentEmail,
                     Name = "Student A",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    EntryAcedmicYear = 2024,
+                    EntryYear = 1
                 };
 
                 var result = await userManager.CreateAsync(studentUser, "student");

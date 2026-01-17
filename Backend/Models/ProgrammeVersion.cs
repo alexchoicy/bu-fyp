@@ -39,9 +39,10 @@ public class ProgrammeVersion
 
     [Column("total_credits")]
     public required int TotalCredits { get; set; }
-    
+
 
     // Navigation properties
     public ICollection<StudentProgramme> StudentProgrammes { get; set; } = new List<StudentProgramme>();
     public ICollection<ProgrammeCategory> ProgrammeCategories { get; set; } = new List<ProgrammeCategory>();
+    public ICollection<ProgrammeSuggestedCourseSchedule> SuggestedCourseSchedules { get; set; } = new List<ProgrammeSuggestedCourseSchedule>();
 }
