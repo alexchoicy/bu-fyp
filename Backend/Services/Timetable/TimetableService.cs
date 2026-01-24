@@ -91,6 +91,9 @@ public class TimetableService : ITimetableService
             .Include(cs => cs.CourseMeetings)
             .Include(cs => cs.CourseVersion)
             .ThenInclude(cv => cv.Course)
+            .ThenInclude(c => c.Code)
+            .Include(cs => cs.CourseVersion)
+            .ThenInclude(cv => cv.Assessments)
             .Where(cs => validVersionIds.Contains(cs.CourseVersionId) &&
                 cs.TermId == semester && cs.Year == year)
             .ToListAsync();
@@ -492,6 +495,8 @@ public class TimetableService : ITimetableService
             .Include(cs => cs.CourseMeetings)
             .Include(cs => cs.CourseVersion)
             .ThenInclude(cv => cv.Course)
+            .Include(cs => cs.CourseVersion)
+            .ThenInclude(cv => cv.Assessments)
             .Where(cs => courseVersionIds.Contains(cs.CourseVersionId) &&
                 cs.TermId == semester && cs.Year == year)
             .ToListAsync();
