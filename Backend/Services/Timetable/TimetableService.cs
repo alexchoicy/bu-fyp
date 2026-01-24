@@ -364,7 +364,7 @@ public class TimetableService : ITimetableService
     {
         foreach (var layout in layouts)
         {
-            Console.WriteLine($"Possible Timetable Layout: Rank {layout.rank}");
+            Console.WriteLine($"Possible Timetable Layout: FinalScore {layout.FinalScore}");
             foreach (var section in layout.Sections)
             {
                 Console.WriteLine($"CourseVersionId: {section.CourseVersionId}, SectionNumber: {section.SectionNumber}");
@@ -373,68 +373,12 @@ public class TimetableService : ITimetableService
                     Console.WriteLine($"  Meeting - Day: {meeting.Day}, StartTime: {meeting.StartTime}, EndTime: {meeting.EndTime}");
                 }
             }
+            foreach (var reason in layout.ScoreReasons)
+            {
+                Console.WriteLine($"  Score Reason: {reason}");
+            }
+            Console.WriteLine("----");
         }
-    }
-
-    public List<TimeTableLayout> FiliterLayoutsWithRequirements(List<TimeTableLayout> layouts, int minGapMinutes, int maxGapMinutes, int maxMeetingsPerDay)
-    {
-        for (int i = layouts.Count - 1; i >= 0; i--)
-        {
-            var layout = layouts[i];
-            var dayMeetings = new Dictionary<int, List<(TimeOnly Start, TimeOnly End)>>();
-
-            foreach (var section in layout.Sections)
-            {
-                foreach (var meeting in section.CourseMeetings)
-                {
-                    if (!dayMeetings.ContainsKey(meeting.Day))
-                    {
-                        dayMeetings[meeting.Day] = new List<(TimeOnly Start, TimeOnly End)>();
-                    }
-                    dayMeetings[meeting.Day].Add((meeting.StartTime, meeting.EndTime));
-                }
-            }
-
-            if (dayMeetings.Any(dm => dm.Value.Count > maxMeetingsPerDay))
-            {
-                layouts.RemoveAt(i);
-                continue;
-            }
-
-            bool hasInvalidGap = false;
-            foreach (var day in dayMeetings.Keys)
-            {
-                var meetings = dayMeetings[day];
-                meetings.Sort((a, b) => a.Start.CompareTo(b.Start));
-
-                for (int j = 1; j < meetings.Count; j++)
-                {
-                    var gap = meetings[j].Start - meetings[j - 1].End;
-                    if (gap.TotalMinutes < minGapMinutes)
-                    {
-                        hasInvalidGap = true;
-                        break;
-                    }
-                    if (gap.TotalMinutes > maxGapMinutes)
-                    {
-                        hasInvalidGap = true;
-                        break;
-                    }
-                }
-
-                if (hasInvalidGap)
-                {
-                    break;
-                }
-            }
-
-            if (hasInvalidGap)
-            {
-                layouts.RemoveAt(i);
-            }
-        }
-
-        return layouts;
     }
 
     public async Task<List<CourseSection>> HandleCoreElectiveCourseSections(int year, int semester, int userProgrammeVersionId, List<int> studentPassedCourseIds, List<string> errors)
@@ -678,13 +622,23 @@ public class TimetableService : ITimetableService
         var layouts = GetAllPossibleTimetableLayouts(mustCourseSections, mustOptionalSections, freeElectiveSections, freeElectiveCreditsRequired);
 
 
-        // FiliterLayoutsWithRequirements(layouts, minGapMinutes: 30, maxGapMinutes: 120, maxMeetingsPerDay: 5);
+        TimetableLayoutFilter.FilterLayoutsWithRequirements(layouts, minGapMinutes: 30, maxGapMinutes: 120, maxMeetingsPerDay: 5);
 
+        foreach (var layout in layouts)
+        {
+            layout.FinalScore = TimetableLayoutScorer.ComputeFinalScore(layout, weightQuality: 0.3);
+        }
 
+        // Optionally sort layouts by final score descending so the best appear first
+        layouts = layouts.OrderByDescending(l => l.FinalScore).ToList();
 
-        Console.WriteLine($"Total Valid Layouts Found: {layouts.Count}");
+        Console.WriteLine("----");
         DebugPrintLayouts(layouts);
         Console.WriteLine("----");
+        Console.WriteLine($"Errors: {string.Join("; ", error)}");
+        Console.WriteLine($"Total Valid Layouts Found: {layouts.Count}");
+
+        Console.WriteLine("Finished Generating Timetable Suggestions");
 
 
 
