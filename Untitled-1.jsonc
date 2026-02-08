@@ -1,0 +1,128 @@
+{
+        "filters": {
+                "earliestStart": "08:00",
+                "latestEnd": "18:00",
+                "noClassTime": [
+                        {
+                                "day": "3",
+                                "start": "12:00",
+                                "end": "13:00",
+                        },
+                ],
+                "excludeSectionIds": [],
+                "excludeCourseIds": [],
+                "mustIncludeSectionIds": [],
+        },
+        "scoring": {
+                "baseQuality": 50, // filter out schedules below this score
+                "groupWeights": {
+                        "scheduleShape": 0.4,
+                        "timePreference": 0.25,
+                        "gapCompactness": 0.2,
+                        "assessmentLoad": 0.15,
+                }, // per group clamp(sum(weights * maxPoints) - sum(penalties), 0, maxPoints)
+                "groups": {
+                        "scheduleShape": {
+                                "maxPoints": 100,
+                                "maxPenalty": 75,
+                                "components": {
+                                        "freeDayScore": {
+                                                "weight": 0.25,
+                                                "maxPoints": 25,
+                                        },
+                                        "singleClassDayScore": {
+                                                "weight": 0.15,
+                                                "maxPoints": 15,
+                                                "params": {
+                                                        "triggerPenalty": true,
+                                                },
+                                        },
+                                        "longDayScore": {
+                                                "weight": 0.2,
+                                                "maxPoints": 20,
+                                                "params": {
+                                                        "maxMinutesPerDay": 480,
+                                                },
+                                        },
+                                        "dailyLoadScore": {
+                                                "weight": 0.4,
+                                                "maxPoints": 40,
+                                                "params": {
+                                                        "idealActiveDays": 3,
+                                                },
+                                        },
+                                        //each items has it own penalty score, max is 75
+                                },
+                        },
+                        "timePreference": {
+                                "maxPoints": 100,
+                                "components": {
+                                        "startTimeScore": {
+                                                "weight": 0.5,
+                                                "maxPoints": 50,
+                                                "params": {
+                                                        "preferredStartRange": {
+                                                                "start": "09:00",
+                                                                "end": "11:00",
+                                                        },
+                                                },
+                                        },
+                                        "endTimeScore": {
+                                                "weight": 0.5,
+                                                "maxPoints": 50,
+                                                "params": {
+                                                        "preferredEndRange": {
+                                                                "start": "14:00",
+                                                                "end": "17:00",
+                                                        },
+                                                },
+                                        },
+                                },
+                        },
+                        "gapCompactness": {
+                                "maxPoints": 100,
+                                "components": {
+                                        "compactGapScore": {
+                                                "weight": 1.0,
+                                                "maxPoints": 100,
+                                                "params": {
+                                                        "idealGapMax": 20,
+                                                        "ignoreBettwenStartEnd": {
+                                                                "start": "12:00",
+                                                                "end": "13:00", // lunch break
+                                                        },
+                                                },
+                                        },
+                                },
+                        },
+                        "assessmentLoad": {
+                                "maxPoints": 100,
+                                "components": {
+                                        "examLoadScore": {
+                                                "type": "Examination",
+                                                "weight": 0.2,
+                                        },
+                                        "assignmentLoadScore": {
+                                                "type": "Assignment",
+                                        },
+                                        "groupProjectLoadScore": {
+                                                "type": "GroupProject",
+                                                "weight": 0.17,
+                                        },
+                                        "soloProjectLoadScore": {
+                                                "type": "SoloProject",
+                                                "weight": 0.17,
+                                        },
+                                        "participationLoadScore": {
+                                                "type": "Participation",
+                                                "weight": 0.12,
+                                        },
+                                        "presentationLoadScore": {
+                                                "type": "Presentation",
+                                                "weight": 0.16,
+                                        },
+                                },
+                        },
+                },
+        },
+}
