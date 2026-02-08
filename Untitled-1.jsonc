@@ -33,9 +33,6 @@
                                         "singleClassDayScore": {
                                                 "weight": 0.15,
                                                 "maxPoints": 15,
-                                                "params": {
-                                                        "triggerPenalty": true,
-                                                },
                                         },
                                         "longDayScore": {
                                                 "weight": 0.2,
