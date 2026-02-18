@@ -1,8 +1,10 @@
 
 
+using Backend.Models;
+
 public class TimetableGenerationRequestDto
 {
-
+    public required TimetableScoring Scoring { get; set; }
 }
 
 
@@ -12,8 +14,9 @@ public class TimetableScoring
 
     public required TimetableScoringGroupWeight GroupWeights { get; set; }
     public required TimetableScoringScheduleShape ScheduleShape { get; set; }
-
-
+    public required TimetablePreferenceShape PreferenceShape { get; set; }
+    public required TimetableGapCompactnessShape GapCompactnessShape { get; set; }
+    public required TimetableAssessmentShape AssessmentShape { get; set; }
 }
 
 public class TimetableScoringGroupWeight
@@ -59,4 +62,51 @@ public class TimetableDailyLoadScore
     public double RewardPoints { get; set; }
     public double PenaltyPoints { get; set; }
     public double IdealActiveDays { get; set; }
+}
+
+public class TimetablePreferenceShape
+{
+    public required StartTimePreference StartTimePreference { get; set; }
+    public required EndTimePreference EndTimePreference { get; set; }
+}
+
+public class StartTimePreference
+{
+    public TimeOnly PreferredStartTime { get; set; }
+    public double RewardPoints { get; set; }
+    public double PenaltyPoints { get; set; }
+}
+
+public class EndTimePreference
+{
+    public TimeOnly PreferredEndTime { get; set; }
+    public double RewardPoints { get; set; }
+    public double PenaltyPoints { get; set; }
+}
+
+public class TimetableGapCompactnessShape
+{
+    public required CompactGap ShortGap { get; set; }
+}
+
+
+public class CompactGap
+{
+    public double RewardPoints { get; set; }
+    public double PenaltyPoints { get; set; }
+    public double MaxGapMinutes { get; set; }
+    public TimeOnly IgnoreGapStartTime { get; set; }
+    public TimeOnly IgnoreGapEndTime { get; set; }
+}
+
+public class TimetableAssessmentShape
+{
+    public List<TimeTableAssessmentScoring> AssessmentCategoryScores { get; set; } = new List<TimeTableAssessmentScoring>();
+}
+
+public class TimeTableAssessmentScoring
+{
+    public AssessmentCategory Category { get; set; }
+    public double RewardPoints { get; set; }
+    public double PenaltyPoints { get; set; }
 }
