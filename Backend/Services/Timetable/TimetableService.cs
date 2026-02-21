@@ -1,4 +1,5 @@
 using Backend.Data;
+using Backend.Dtos.Courses;
 using Backend.Models;
 using Backend.Services.Programmes;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace Backend.Services.Timetable;
 
 public interface ITimetableService
 {
-    Task GetSuggestionsTimetableAsync(string userId);
+    Task<TimetableSuggestionsResponseDto> GetSuggestionsTimetableAsync(string userId, TimetableGenerationRequestDto request);
 }
 
 
@@ -54,6 +55,7 @@ public class TimetableService : ITimetableService
         var latestVersion = await _context.CourseVersions
             .Include(cv => cv.AntiRequisites)
             .Include(cv => cv.Prerequisites)
+            .Include(cv => cv.Course)
             .Where(cv => latestVersionIds.Contains(cv.Id))
             .ToListAsync();
 
@@ -65,7 +67,7 @@ public class TimetableService : ITimetableService
             {
                 if (!studentPassedCourseVersionsIds.Contains(prereq.RequiredCourseVersionId))
                 {
-                    errors.Add($"Missing prerequisite for course {version.CourseId}");
+                    errors.Add($"Missing prerequisite for course {version.CourseId} - {version.Course.Name}");
                     versionsToRemove.Add(version.Id);
                     break;
                 }
@@ -78,7 +80,7 @@ public class TimetableService : ITimetableService
             {
                 if (studentPassedCourseVersionsIds.Contains(antireq.ExcludedCourseVersionId))
                 {
-                    errors.Add($"Has taken anti-requisite for course {version.CourseId}");
+                    errors.Add($"Has taken anti-requisite for course {version.CourseId} - {version.Course.Name}");
                     versionsToRemove.Add(version.Id);
                     break;
                 }
@@ -384,6 +386,13 @@ public class TimetableService : ITimetableService
         }
     }
 
+    private static string BuildLayoutKey(TimeTableLayout layout)
+    {
+        return string.Join(",", layout.Sections
+            .Select(section => section.Id)
+            .OrderBy(id => id));
+    }
+
     public async Task<List<CourseSection>> HandleCoreElectiveCourseSections(int year, int semester, int userProgrammeVersionId, List<int> studentPassedCourseIds, List<string> errors)
     {
         var coreElectiveCategories = await _context.ProgrammeCategories
@@ -404,10 +413,11 @@ public class TimetableService : ITimetableService
 
             var unfulfilledGroupIds = _evaluateRule.GetUnfulfilledGroupsForCategory(category.Rules, completedGroupIds);
 
+            Console.WriteLine($"Unfulfilled Groups: {string.Join(", ", unfulfilledGroupIds)}");
+
             if (unfulfilledGroupIds.Count == 0)
                 continue;
 
-            //It suppose to not be duplicate i think ha
             var sections = await GetCourseSectionsByGroupsIds(unfulfilledGroupIds, studentPassedCourseIds, year, semester);
 
             resultSections.AddRange(sections);
@@ -515,7 +525,7 @@ public class TimetableService : ITimetableService
             .Where(gc => _context.CategoryGroups
                 .Where(cg => cg.CategoryId == categoryId)
                 .Select(cg => cg.GroupId)
-                .Contains(gc.CourseId))
+                .Contains(gc.GroupId))
             .ToListAsync();
 
         foreach (var studentCourseId in studentPassedCourseIds)
@@ -588,7 +598,7 @@ public class TimetableService : ITimetableService
     }
 
 
-    public async Task GetSuggestionsTimetableAsync(string userId)
+    public async Task<TimetableSuggestionsResponseDto> GetSuggestionsTimetableAsync(string userId, TimetableGenerationRequestDto request)
     {
         var user = await _context.Users.FindAsync(userId);
 
@@ -626,13 +636,19 @@ public class TimetableService : ITimetableService
 
         var layouts = GetAllPossibleTimetableLayouts(mustCourseSections, mustOptionalSections, freeElectiveSections, freeElectiveCreditsRequired);
 
+        layouts = layouts
+            .GroupBy(BuildLayoutKey)
+            .Select(group => group.First())
+            .ToList();
 
-        TimetableLayoutFilter.FilterLayoutsWithRequirements(layouts, minGapMinutes: 30, maxGapMinutes: 120, maxMeetingsPerDay: 5);
+        layouts = layouts.Where(layout => TimetableLayoutFilter.Filter(layout, request.Filter)).ToList();
 
         foreach (var layout in layouts)
         {
-            layout.FinalScore = TimetableLayoutScorer.ComputeFinalScore(layout, weightQuality: 0.3);
+            TimetableLayoutScorer.ScoreTimetableLayout(layout, request.Scoring);
         }
+
+        layouts = layouts.Where(l => l.FinalScore >= request.Scoring.BaseScore).ToList();
 
         // Optionally sort layouts by final score descending so the best appear first
         layouts = layouts.OrderByDescending(l => l.FinalScore).ToList();
@@ -644,9 +660,35 @@ public class TimetableService : ITimetableService
         Console.WriteLine($"Total Valid Layouts Found: {layouts.Count}");
 
         Console.WriteLine("Finished Generating Timetable Suggestions");
+        var suggestionLayouts = layouts
+            .Select(layout => new TimetableSuggestionLayoutDto
+            {
+                Sections = layout.Sections
+                    .Select(section => new TimetableSectionDto
+                    {
+                        SectionId = section.Id,
+                        SectionNumber = section.SectionNumber,
+                        Meetings = section.CourseMeetings
+                            .Select(meeting => new TimetableMeetingDto
+                            {
+                                Id = meeting.Id,
+                                MeetingType = meeting.MeetingType,
+                                Day = meeting.Day,
+                                StartTime = meeting.StartTime,
+                                EndTime = meeting.EndTime,
+                            })
+                            .ToList(),
+                    })
+                    .ToArray(),
+                FinalScore = layout.FinalScore,
+                ScoreReasons = new List<string>(layout.ScoreReasons),
+            })
+            .ToList();
 
-
-
-        return;
+        return new TimetableSuggestionsResponseDto
+        {
+            Layouts = suggestionLayouts,
+            Errors = error.ToList(),
+        };
     }
 }

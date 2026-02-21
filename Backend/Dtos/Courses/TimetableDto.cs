@@ -1,4 +1,4 @@
-﻿namespace Backend.Dtos.Courses;
+namespace Backend.Dtos.Courses;
 
 public class TimetableResponseDto
 {

@@ -448,21 +448,14 @@ public class EvaluateRule : IEvaluateRule
         return result;
     }
 
-    /// <summary>
-    /// Gets all unfulfilled group IDs from the rule tree by finding the best-matching path
-    /// when there are multiple options (Any operator), then extracting all group IDs
-    /// from that path that haven't been completed yet.
-    /// </summary>
-    /// <param name="rules">The root RuleNode of the category</param>
-    /// <param name="completedGroupIds">Set of group IDs already satisfied</param>
-    /// <returns>List of unfulfilled group IDs from the best-matching path</returns>
+    // lets pretend it work, suppose it should return the bestPath.
     public List<int> GetUnfulfilledGroupsForCategory(RuleNode rules, HashSet<int> completedGroupIds)
     {
         var allGroupsInPath = new List<int>();
-        
+
         // Find the best matching path and collect all group IDs from it
         CollectGroupsFromBestPath(rules, completedGroupIds, allGroupsInPath);
-        
+
         // Filter to only return groups that haven't been completed
         return allGroupsInPath
             .Where(groupId => !completedGroupIds.Contains(groupId))
@@ -470,11 +463,6 @@ public class EvaluateRule : IEvaluateRule
             .ToList();
     }
 
-    /// <summary>
-    /// Recursively finds the best-matching rule path and collects all GroupIDs from it.
-    /// For Any operators, selects the path with the most completed groups.
-    /// For And operators, collects groups from all children.
-    /// </summary>
     private void CollectGroupsFromBestPath(
         RuleNode node,
         HashSet<int> completedGroupIds,
@@ -482,6 +470,7 @@ public class EvaluateRule : IEvaluateRule
     {
         if (node is GroupRuleNode groupNode)
         {
+            Console.WriteLine($"Visiting GroupRuleNode with GroupID: {groupNode.GroupID}");
             collectedGroups.Add(groupNode.GroupID);
         }
         else if (node is RuleRuleNode ruleNode)
@@ -501,9 +490,10 @@ public class EvaluateRule : IEvaluateRule
             {
                 // Find the path with the most completed groups (best match)
                 var bestPath = FindBestMatchingPath(ruleNode.Children, completedGroupIds);
+                Console.WriteLine($"Best path operator: {ruleNode.Operator}, Best path type: {bestPath?.GetType().Name}");
                 if (bestPath != null)
                 {
-                    CollectGroupsFromBestPath(bestPath, completedGroupIds, collectedGroups);
+                    CollectAllGroups(bestPath, collectedGroups);
                 }
             }
         }
@@ -513,10 +503,6 @@ public class EvaluateRule : IEvaluateRule
         }
     }
 
-    /// <summary>
-    /// Finds the path with the highest score (most completed groups).
-    /// Score = count of groups in path that are already completed.
-    /// </summary>
     private RuleNode? FindBestMatchingPath(List<RuleNode> paths, HashSet<int> completedGroupIds)
     {
         RuleNode? bestPath = null;
@@ -526,10 +512,10 @@ public class EvaluateRule : IEvaluateRule
         {
             var groupsInPath = new List<int>();
             CollectAllGroups(path, groupsInPath);
-            
+
             // Score = how many groups in this path are already completed
             int score = groupsInPath.Count(gId => completedGroupIds.Contains(gId));
-            
+
             if (score > bestScore)
             {
                 bestScore = score;
@@ -540,9 +526,7 @@ public class EvaluateRule : IEvaluateRule
         return bestPath;
     }
 
-    /// <summary>
-    /// Recursively collects all GroupIDs from a rule node at any depth.
-    /// </summary>
+
     private void CollectAllGroups(RuleNode node, List<int> groups)
     {
         if (node is GroupRuleNode groupNode)
@@ -566,4 +550,3 @@ public class EvaluateRule : IEvaluateRule
     }
 
 }
-

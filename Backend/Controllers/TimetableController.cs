@@ -57,8 +57,9 @@ namespace Backend.Controllers
                 return StatusCode(500, new { message = "Error retrieving timetable" });
             }
         }
-        [HttpGet("/suggestions")]
-        public async Task<IActionResult> GetCourseSuggestions()
+        [HttpPost("/suggestions")]
+        [ProducesResponseType(typeof(TimetableSuggestionsResponseDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCourseSuggestions([FromBody] TimetableGenerationRequestDto request)
         {
             try
             {
@@ -67,8 +68,8 @@ namespace Backend.Controllers
                 {
                     return Unauthorized(new { message = "User ID not found in token" });
                 }
-                await _timetableService.GetSuggestionsTimetableAsync(userId);
-                return Ok();
+                var suggestions = await _timetableService.GetSuggestionsTimetableAsync(userId, request);
+                return Ok(suggestions);
             }
             catch (Exception ex)
             {
@@ -78,5 +79,3 @@ namespace Backend.Controllers
         }
     }
 }
-
-

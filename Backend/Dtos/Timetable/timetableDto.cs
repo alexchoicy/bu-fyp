@@ -1,12 +1,42 @@
 
 
+using System.Text.Json.Serialization;
+using Backend.Dtos.Courses;
 using Backend.Models;
 
 public class TimetableGenerationRequestDto
 {
     public required TimetableScoring Scoring { get; set; }
+    public TimetableFilterDto Filter { get; set; } = new();
 }
 
+
+public class TimetableFilterDto
+{
+    public TimeOnly? EarliestStart { get; set; }
+    public TimeOnly? LatestEnd { get; set; }
+    public List<TimetableNoClassTimeDto> NoClassTime { get; set; } = new();
+}
+
+public class TimetableNoClassTimeDto
+{
+    public int Day { get; set; }
+    public TimeOnly Start { get; set; }
+    public TimeOnly End { get; set; }
+}
+
+public class TimetableSuggestionLayoutDto
+{
+    public TimetableSectionDto[] Sections { get; set; } = Array.Empty<TimetableSectionDto>();
+    public double FinalScore { get; set; } = 0.0;
+    public List<string> ScoreReasons { get; set; } = new();
+}
+
+public class TimetableSuggestionsResponseDto
+{
+    public List<TimetableSuggestionLayoutDto> Layouts { get; set; } = new();
+    public List<string> Errors { get; set; } = new();
+}
 
 public class TimetableScoring
 {
@@ -106,6 +136,7 @@ public class TimetableAssessmentShape
 
 public class TimeTableAssessmentScoring
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public AssessmentCategory Category { get; set; }
     public double RewardPoints { get; set; }
     public double PenaltyPoints { get; set; }
