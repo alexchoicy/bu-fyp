@@ -8,6 +8,7 @@ namespace Backend.Models;
 public enum CategoryType
 {
     Core,
+    Core_Elective,
     Elective,
     GE
 }
@@ -25,7 +26,7 @@ public class Category
 
     [Column("rules", TypeName = "jsonb")]
     public string? RulesJson { get; set; }
-    
+
     [Column("notes")]
     public string Notes { get; set; } = string.Empty;
 
@@ -41,7 +42,7 @@ public class Category
     // Navigation properties
     public ICollection<ProgrammeCategory> ProgrammeCategories { get; set; } = new List<ProgrammeCategory>();
     public ICollection<CategoryGroup> CategoryGroups { get; set; } = new List<CategoryGroup>();
-    
+
     [NotMapped]
     public RuleNode? Rules
     {
@@ -58,5 +59,5 @@ public class Category
                 : JsonSerializer.Serialize<RuleNode>(value);
         }
     }
-    
+
 }

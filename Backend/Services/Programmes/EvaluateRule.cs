@@ -30,6 +30,7 @@ public class CategoryCompletionStatus
 public interface IEvaluateRule
 {
     Task<IList<CategoryCompletionStatus>> CheckUserCompletion(string userId);
+    List<int> GetUnfulfilledGroupsForCategory(RuleNode rules, HashSet<int> completedGroupIds);
 }
 public class EvaluateRule : IEvaluateRule
 {
@@ -447,6 +448,105 @@ public class EvaluateRule : IEvaluateRule
         return result;
     }
 
+    // lets pretend it work, suppose it should return the bestPath.
+    public List<int> GetUnfulfilledGroupsForCategory(RuleNode rules, HashSet<int> completedGroupIds)
+    {
+        var allGroupsInPath = new List<int>();
+
+        // Find the best matching path and collect all group IDs from it
+        CollectGroupsFromBestPath(rules, completedGroupIds, allGroupsInPath);
+
+        // Filter to only return groups that haven't been completed
+        return allGroupsInPath
+            .Where(groupId => !completedGroupIds.Contains(groupId))
+            .Distinct()
+            .ToList();
+    }
+
+    private void CollectGroupsFromBestPath(
+        RuleNode node,
+        HashSet<int> completedGroupIds,
+        List<int> collectedGroups)
+    {
+        if (node is GroupRuleNode groupNode)
+        {
+            Console.WriteLine($"Visiting GroupRuleNode with GroupID: {groupNode.GroupID}");
+            collectedGroups.Add(groupNode.GroupID);
+        }
+        else if (node is RuleRuleNode ruleNode)
+        {
+            if (ruleNode.Children == null || ruleNode.Children.Count == 0)
+                return;
+
+            if (ruleNode.Operator == RuleOperator.And)
+            {
+                // For And operator, collect from all children
+                foreach (var child in ruleNode.Children)
+                {
+                    CollectGroupsFromBestPath(child, completedGroupIds, collectedGroups);
+                }
+            }
+            else // Any operator
+            {
+                // Find the path with the most completed groups (best match)
+                var bestPath = FindBestMatchingPath(ruleNode.Children, completedGroupIds);
+                Console.WriteLine($"Best path operator: {ruleNode.Operator}, Best path type: {bestPath?.GetType().Name}");
+                if (bestPath != null)
+                {
+                    CollectAllGroups(bestPath, collectedGroups);
+                }
+            }
+        }
+        else if (node is FreeElectiveRuleNode freeElectiveNode)
+        {
+            collectedGroups.Add(freeElectiveNode.GroupID);
+        }
+    }
+
+    private RuleNode? FindBestMatchingPath(List<RuleNode> paths, HashSet<int> completedGroupIds)
+    {
+        RuleNode? bestPath = null;
+        int bestScore = -1;
+
+        foreach (var path in paths)
+        {
+            var groupsInPath = new List<int>();
+            CollectAllGroups(path, groupsInPath);
+
+            // Score = how many groups in this path are already completed
+            int score = groupsInPath.Count(gId => completedGroupIds.Contains(gId));
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestPath = path;
+            }
+        }
+
+        return bestPath;
+    }
+
+
+    private void CollectAllGroups(RuleNode node, List<int> groups)
+    {
+        if (node is GroupRuleNode groupNode)
+        {
+            groups.Add(groupNode.GroupID);
+        }
+        else if (node is RuleRuleNode ruleNode)
+        {
+            if (ruleNode.Children != null)
+            {
+                foreach (var child in ruleNode.Children)
+                {
+                    CollectAllGroups(child, groups);
+                }
+            }
+        }
+        else if (node is FreeElectiveRuleNode freeElectiveNode)
+        {
+            groups.Add(freeElectiveNode.GroupID);
+        }
+    }
 
 }
-

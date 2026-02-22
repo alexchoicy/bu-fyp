@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Backend.Services.Courses;
 using Backend.Dtos.Courses;
 using Microsoft.AspNetCore.Authorization;
+using Backend.Services.Timetable;
 
 namespace Backend.Controllers
 {
@@ -14,10 +15,13 @@ namespace Backend.Controllers
         private readonly ILogger<TimetableController> _logger;
         private readonly ICourseService _courseService;
 
-        public TimetableController(ILogger<TimetableController> logger, ICourseService courseService)
+        private readonly ITimetableService _timetableService;
+
+        public TimetableController(ILogger<TimetableController> logger, ICourseService courseService, ITimetableService timetableService)
         {
             _logger = logger;
             _courseService = courseService;
+            _timetableService = timetableService;
         }
 
         [HttpGet]
@@ -51,6 +55,26 @@ namespace Backend.Controllers
             {
                 _logger.LogError(ex, "Error retrieving timetable for year {Year} and term {TermId}", year, termId);
                 return StatusCode(500, new { message = "Error retrieving timetable" });
+            }
+        }
+        [HttpPost("suggestions")]
+        [ProducesResponseType(typeof(TimetableSuggestionsResponseDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCourseSuggestions([FromBody] TimetableGenerationRequestDto request)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User ID not found in token" });
+                }
+                var suggestions = await _timetableService.GetSuggestionsTimetableAsync(userId, request);
+                return Ok(suggestions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving course suggestions");
+                return StatusCode(500, new { message = "Error retrieving course suggestions" });
             }
         }
     }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner';
+
 
 const open = defineModel<boolean>('open', { default: false });
 
@@ -25,6 +27,12 @@ const selectedEndTime = ref<number>();
 
 const handleAddBlockTime = () => {
     if (selectedDay.value !== undefined && selectedStartTime.value !== undefined && selectedEndTime.value !== undefined) {
+
+        if (selectedEndTime.value <= selectedStartTime.value) {
+            toast("End time must be after start time.");
+            return;
+        }
+
         const day = selectedDay.value;
         const newItem: BlockTimeItem = {
             id: crypto.randomUUID(),

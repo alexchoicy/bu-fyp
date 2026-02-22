@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<StudentProgramme> StudentProgrammes { get; set; }
     public DbSet<StudentCourse> StudentCourses { get; set; }
     public DbSet<ProgrammeCategory> ProgrammeCategories { get; set; }
+    public DbSet<ProgrammeSuggestedCourseSchedule> ProgrammeSuggestedCourseSchedules { get; set; }
 
     // Category & Group
     public DbSet<Category> Categories { get; set; }
@@ -56,7 +57,7 @@ public class AppDbContext : IdentityDbContext<User>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         modelBuilder.HasPostgresExtension("vector");
 
         modelBuilder.Entity<CourseVersion>()
@@ -206,7 +207,29 @@ public class AppDbContext : IdentityDbContext<User>
             .WithMany(t => t.CourseTags)
             .HasForeignKey(ct => ct.TagId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
+        modelBuilder.Entity<ProgrammeSuggestedCourseSchedule>()
+            .HasOne(psc => psc.ProgrammeVersion)
+            .WithMany(pv => pv.SuggestedCourseSchedules)
+            .HasForeignKey(psc => psc.ProgrammeVersionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProgrammeSuggestedCourseSchedule>()
+            .HasOne(psc => psc.Term)
+            .WithMany()
+            .HasForeignKey(psc => psc.TermId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProgrammeSuggestedCourseSchedule>()
+            .HasOne(psc => psc.Course)
+            .WithMany()
+            .HasForeignKey(psc => psc.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProgrammeSuggestedCourseSchedule>()
+            .HasIndex(psc => new { psc.ProgrammeVersionId, psc.StudyYear, psc.TermId, psc.CourseId })
+            .IsUnique();
+
         modelBuilder.Entity<PolicySectionChunk>()
             .HasOne(psc => psc.PolicySection)
             .WithMany(ps => ps.Chunks)

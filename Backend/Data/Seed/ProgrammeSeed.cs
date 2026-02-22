@@ -59,6 +59,7 @@ public class ProgrammeSeed
             Name = "COMP SCI - ISA Core Courses",
             MinCredit = 15,
             Priority = 11,
+            Type = CategoryType.Core,
             Rules = new RuleRuleNode
             {
                 Operator = RuleOperator.And,
@@ -69,23 +70,12 @@ public class ProgrammeSeed
             }
         };
 
-        var category2 = new Category
-        {
-            Name = "Free Elective Courses",
-            MinCredit = 24,
-            Priority = -1,
-            Rules = new FreeElectiveRuleNode
-            {
-                GroupID = freeElective001.Id,
-                MinCredits = 24
-            }
-        };
-
         var categoryISAElective = new Category
         {
             Name = "ISA Elective Courses",
             MinCredit = 6,
             Priority = 5,
+            Type = CategoryType.Core_Elective,
             Rules = new RuleRuleNode
             {
                 Operator = RuleOperator.Any,
@@ -120,6 +110,21 @@ public class ProgrammeSeed
                 }
             }
         };
+
+        var category2 = new Category
+        {
+            Name = "Free Elective Courses",
+            MinCredit = 24,
+            Priority = -1,
+            Type = CategoryType.Elective,
+            Rules = new FreeElectiveRuleNode
+            {
+                GroupID = freeElective001.Id,
+                MinCredits = 24
+            }
+        };
+
+
 
         await context.Categories.AddRangeAsync(category0, category2, categoryISAElective);
         await context.SaveChangesAsync();
