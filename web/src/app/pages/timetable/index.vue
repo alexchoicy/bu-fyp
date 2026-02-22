@@ -135,9 +135,14 @@ const handleDeleteBlockTime = (day: number, itemId: string) => {
         <div class="px-3 py-2 bg-muted/50 border-b border-border">
           <h2 class="font-medium text-sm">Courses & Sections</h2>
         </div>
-        <div class="w-full">
+        <div class="w-full space-y-2">
+          <Button class=" w-full">
+            <NuxtLink to="/timetable/generation">
+              Timetable Generation
+            </NuxtLink>
+          </Button>
           <Button class=" w-full" @click="filterDialogOpen = true">Filter </Button>
-          <Button class=" w-full mt-2" @click="blockTimeDialogOpen = true"> Block time </Button>
+          <Button class=" w-full" @click="blockTimeDialogOpen = true"> Block time </Button>
         </div>
         <div class="flex-1 overflow-hidden">
           <UiTimetableCoursePanel :courses="availableItems?.entries ?? []" :selected-sections="selectedSections"

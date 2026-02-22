@@ -57,7 +57,7 @@ namespace Backend.Controllers
                 return StatusCode(500, new { message = "Error retrieving timetable" });
             }
         }
-        [HttpPost("/suggestions")]
+        [HttpPost("suggestions")]
         [ProducesResponseType(typeof(TimetableSuggestionsResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCourseSuggestions([FromBody] TimetableGenerationRequestDto request)
         {

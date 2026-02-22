@@ -56,6 +56,7 @@ public class TimetableService : ITimetableService
             .Include(cv => cv.AntiRequisites)
             .Include(cv => cv.Prerequisites)
             .Include(cv => cv.Course)
+            .ThenInclude(c => c.Code)
             .Where(cv => latestVersionIds.Contains(cv.Id))
             .ToListAsync();
 
@@ -67,7 +68,7 @@ public class TimetableService : ITimetableService
             {
                 if (!studentPassedCourseVersionsIds.Contains(prereq.RequiredCourseVersionId))
                 {
-                    errors.Add($"Missing prerequisite for course {version.CourseId} - {version.Course.Name}");
+                    errors.Add($"Missing prerequisite for course {version.Course.Code.Tag}{version.Course.CourseNumber} - {version.Course.Name}");
                     versionsToRemove.Add(version.Id);
                     break;
                 }
@@ -80,7 +81,7 @@ public class TimetableService : ITimetableService
             {
                 if (studentPassedCourseVersionsIds.Contains(antireq.ExcludedCourseVersionId))
                 {
-                    errors.Add($"Has taken anti-requisite for course {version.CourseId} - {version.Course.Name}");
+                    errors.Add($"Has taken anti-requisite for course {version.Course.Code.Tag}{version.Course.CourseNumber} - {version.Course.Name}");
                     versionsToRemove.Add(version.Id);
                     break;
                 }
