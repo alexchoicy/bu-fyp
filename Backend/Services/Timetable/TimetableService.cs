@@ -649,10 +649,15 @@ public class TimetableService : ITimetableService
             TimetableLayoutScorer.ScoreTimetableLayout(layout, request.Scoring);
         }
 
-        layouts = layouts.Where(l => l.FinalScore >= request.Scoring.BaseScore).ToList();
-
-        // Optionally sort layouts by final score descending so the best appear first
         layouts = layouts.OrderByDescending(l => l.FinalScore).ToList();
+
+        var recommendedLayouts = layouts.Take(10).ToList();
+
+        var demoBadLayout = layouts
+            .Where(layout => layout.FinalScore <= -1)
+            .OrderBy(layout => layout.FinalScore)
+            .FirstOrDefault()
+            ?? layouts.OrderBy(layout => layout.FinalScore).FirstOrDefault();
 
         Console.WriteLine("----");
         DebugPrintLayouts(layouts);
@@ -661,7 +666,7 @@ public class TimetableService : ITimetableService
         Console.WriteLine($"Total Valid Layouts Found: {layouts.Count}");
 
         Console.WriteLine("Finished Generating Timetable Suggestions");
-        var suggestionLayouts = layouts
+        var suggestionLayouts = recommendedLayouts
             .Select(layout => new TimetableSuggestionLayoutDto
             {
                 Sections = layout.Sections
@@ -686,9 +691,35 @@ public class TimetableService : ITimetableService
             })
             .ToList();
 
+        TimetableDemoBadLayoutDto? demoBadLayoutDto = demoBadLayout == null
+            ? null
+            : new TimetableDemoBadLayoutDto
+            {
+                Sections = demoBadLayout.Sections
+                    .Select(section => new TimetableSectionDto
+                    {
+                        SectionId = section.Id,
+                        SectionNumber = section.SectionNumber,
+                        Meetings = section.CourseMeetings
+                            .Select(meeting => new TimetableMeetingDto
+                            {
+                                Id = meeting.Id,
+                                MeetingType = meeting.MeetingType,
+                                Day = meeting.Day,
+                                StartTime = meeting.StartTime,
+                                EndTime = meeting.EndTime,
+                            })
+                            .ToList(),
+                    })
+                    .ToArray(),
+                FinalScore = demoBadLayout.FinalScore,
+                ScoreReasons = new List<string>(demoBadLayout.ScoreReasons),
+            };
+
         return new TimetableSuggestionsResponseDto
         {
-            Layouts = suggestionLayouts,
+            RecommendedLayouts = suggestionLayouts,
+            DemoBadLayout = demoBadLayoutDto,
             Errors = error.ToList(),
         };
     }

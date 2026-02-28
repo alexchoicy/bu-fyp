@@ -34,8 +34,16 @@ public class TimetableSuggestionLayoutDto
 
 public class TimetableSuggestionsResponseDto
 {
-    public List<TimetableSuggestionLayoutDto> Layouts { get; set; } = new();
+    public List<TimetableSuggestionLayoutDto> RecommendedLayouts { get; set; } = new();
+    public TimetableDemoBadLayoutDto? DemoBadLayout { get; set; }
     public List<string> Errors { get; set; } = new();
+}
+
+public class TimetableDemoBadLayoutDto
+{
+    public TimetableSectionDto[] Sections { get; set; } = Array.Empty<TimetableSectionDto>();
+    public double FinalScore { get; set; } = 0.0;
+    public List<string> ScoreReasons { get; set; } = new();
 }
 
 public class TimetableScoring
@@ -57,9 +65,7 @@ public class TimetableScoringGroupWeight
     public double assessments { get; set; } = 0.15;
 }
 
-// the idea is each scoring aspect has a max points and a max penalty
-// user will set when the penalty(maxPenalty), how much points to penalty
-// how much point to reward(maxPoints)
+// each scoring aspect uses one point value for both reward and penalty sides
 public class TimetableScoringScheduleShape
 {
     public required TimetableScoringFreeDayScore FreeDayScore { get; set; }
@@ -70,27 +76,23 @@ public class TimetableScoringScheduleShape
 
 public class TimetableScoringFreeDayScore
 {
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
 }
 
 public class TimetableScoringSingleClassDayScore
 {
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
 }
 
 public class TimetableScoringLongDayScore
 {
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
     public double MaxMinutesPerDay { get; set; }
 }
 
 public class TimetableDailyLoadScore
 {
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
     public double IdealActiveDays { get; set; }
 }
 
@@ -103,15 +105,13 @@ public class TimetablePreferenceShape
 public class StartTimePreference
 {
     public TimeOnly PreferredStartTime { get; set; }
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
 }
 
 public class EndTimePreference
 {
     public TimeOnly PreferredEndTime { get; set; }
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
 }
 
 public class TimetableGapCompactnessShape
@@ -122,8 +122,7 @@ public class TimetableGapCompactnessShape
 
 public class CompactGap
 {
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
     public double MaxGapMinutes { get; set; }
     public TimeOnly IgnoreGapStartTime { get; set; }
     public TimeOnly IgnoreGapEndTime { get; set; }
@@ -138,6 +137,5 @@ public class TimeTableAssessmentScoring
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public AssessmentCategory Category { get; set; }
-    public double RewardPoints { get; set; }
-    public double PenaltyPoints { get; set; }
+    public double Points { get; set; } = 3.0;
 }
