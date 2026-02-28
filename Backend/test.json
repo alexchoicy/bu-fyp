@@ -1,0 +1,88 @@
+{
+    "scoring": {
+        "baseScore": 0,
+        "groupWeights": {
+            "schedule": 0.4,
+            "timePreference": 0.25,
+            "gap": 0.2,
+            "assessments": 0.15
+        },
+        "scheduleShape": {
+            "freeDayScore": {
+                "points": 3
+            },
+            "singleClassDayScore": {
+                "points": 3
+            },
+            "longDayScore": {
+                "points": 3,
+                "maxMinutesPerDay": 360
+            },
+            "dailyLoadScore": {
+                "points": 3,
+                "idealActiveDays": 4
+            }
+        },
+        "preferenceShape": {
+            "startTimePreference": {
+                "preferredStartTime": "09:00:00",
+                "points": 3
+            },
+            "endTimePreference": {
+                "preferredEndTime": "18:00:00",
+                "points": 3
+            }
+        },
+        "gapCompactnessShape": {
+            "shortGap": {
+                "points": 3,
+                "maxGapMinutes": 90,
+                "ignoreGapStartTime": "12:00:00",
+                "ignoreGapEndTime": "14:00:00"
+            }
+        },
+        "assessmentShape": {
+            "assessmentCategoryScores": [
+                {
+                    "category": "Examination",
+                    "points": 3
+                },
+                {
+                    "category": "Assignment",
+                    "points": 3
+                },
+                {
+                    "category": "Project",
+                    "points": 3
+                },
+                {
+                    "category": "SoloProject",
+                    "points": 3
+                },
+                {
+                    "category": "Participation",
+                    "points": 3
+                },
+                {
+                    "category": "Presentation",
+                    "points": 3
+                },
+                {
+                    "category": "Other",
+                    "points": 3
+                }
+            ]
+        }
+    },
+    "filter": {
+        "earliestStart": "08:00:00",
+        "latestEnd": "20:00:00",
+        "noClassTime": [
+            {
+                "day": 0,
+                "start": "07:00:00",
+                "end": "09:00:00"
+            }
+        ]
+    }
+}

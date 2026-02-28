@@ -7,8 +7,7 @@ namespace Backend.Services.Timetable
 {
     public static class TimetableLayoutScorer
     {
-        private const double MaxRewardPoints = 100.0;
-        private const double MaxPenaltyPoints = 90.0;
+        private const double MaxRewardPoints = 3.0;
 
         public static double ScoreTimetableLayout(TimeTableLayout layout, TimetableScoring scoring)
         {
@@ -66,8 +65,7 @@ namespace Backend.Services.Timetable
             double freeDayRatio = ClampRatio((consideredWeekdays - activeDays) / (double)consideredWeekdays);
 
             double freeDayScore = ScoreFromRatio(
-                shape.FreeDayScore.RewardPoints,
-                shape.FreeDayScore.PenaltyPoints,
+                shape.FreeDayScore.Points,
                 freeDayRatio);
 
             double singleClassRatio = activeDays == 0
@@ -75,8 +73,7 @@ namespace Backend.Services.Timetable
                 : ClampRatio(dayMeetings.Values.Count(m => m.Count == 1) / (double)activeDays);
 
             double singleClassDayScore = ScoreFromRatio(
-                shape.SingleClassDayScore.RewardPoints,
-                shape.SingleClassDayScore.PenaltyPoints,
+                shape.SingleClassDayScore.Points,
                 singleClassRatio);
 
             double longDayRatio = 1;
@@ -93,8 +90,7 @@ namespace Backend.Services.Timetable
             }
 
             double longDayScore = ScoreFromRatio(
-                shape.LongDayScore.RewardPoints,
-                shape.LongDayScore.PenaltyPoints,
+                shape.LongDayScore.Points,
                 longDayRatio);
 
             double dailyLoadRatio;
@@ -113,8 +109,7 @@ namespace Backend.Services.Timetable
             }
 
             double dailyLoadScore = ScoreFromRatio(
-                shape.DailyLoadScore.RewardPoints,
-                shape.DailyLoadScore.PenaltyPoints,
+                shape.DailyLoadScore.Points,
                 dailyLoadRatio);
 
             return Average(new[] { freeDayScore, singleClassDayScore, longDayScore, dailyLoadScore });
@@ -129,13 +124,11 @@ namespace Backend.Services.Timetable
             if (meetings.Count == 0)
             {
                 double emptyStart = ScoreFromRatio(
-                    preferenceShape.StartTimePreference.RewardPoints,
-                    preferenceShape.StartTimePreference.PenaltyPoints,
+                    preferenceShape.StartTimePreference.Points,
                     1);
 
                 double emptyEnd = ScoreFromRatio(
-                    preferenceShape.EndTimePreference.RewardPoints,
-                    preferenceShape.EndTimePreference.PenaltyPoints,
+                    preferenceShape.EndTimePreference.Points,
                     1);
 
                 return Average(new[] { emptyStart, emptyEnd });
@@ -145,13 +138,11 @@ namespace Backend.Services.Timetable
             double endRatio = ClampRatio(meetings.Count(m => m.EndTime <= preferenceShape.EndTimePreference.PreferredEndTime) / (double)meetings.Count);
 
             double startScore = ScoreFromRatio(
-                preferenceShape.StartTimePreference.RewardPoints,
-                preferenceShape.StartTimePreference.PenaltyPoints,
+                preferenceShape.StartTimePreference.Points,
                 startRatio);
 
             double endScore = ScoreFromRatio(
-                preferenceShape.EndTimePreference.RewardPoints,
-                preferenceShape.EndTimePreference.PenaltyPoints,
+                preferenceShape.EndTimePreference.Points,
                 endRatio);
 
             return Average(new[] { startScore, endScore });
@@ -189,8 +180,7 @@ namespace Backend.Services.Timetable
             double compactnessRatio = consideredGaps == 0 ? 1 : ClampRatio(compactGaps / (double)consideredGaps);
 
             return ScoreFromRatio(
-                gapShape.ShortGap.RewardPoints,
-                gapShape.ShortGap.PenaltyPoints,
+                gapShape.ShortGap.Points,
                 compactnessRatio);
         }
 
@@ -218,9 +208,8 @@ namespace Backend.Services.Timetable
                 }
 
                 bool hasCategory = presentBuckets.Contains(bucket);
-                double score = hasCategory
-                    ? ClampReward(categoryScore.RewardPoints)
-                    : -ClampPenalty(categoryScore.PenaltyPoints);
+                double points = ClampReward(categoryScore.Points);
+                double score = hasCategory ? points : -points;
 
                 scores.Add(score);
             }
@@ -246,25 +235,17 @@ namespace Backend.Services.Timetable
             return gapStart < ignoreEnd && gapEnd > ignoreStart;
         }
 
-        private static double ScoreFromRatio(double rewardPoints, double penaltyPoints, double ratio)
+        private static double ScoreFromRatio(double points, double ratio)
         {
-            double reward = ClampReward(rewardPoints);
-            double penalty = ClampPenalty(penaltyPoints);
+            double boundedPoints = ClampReward(points);
             double boundedRatio = ClampRatio(ratio);
 
-            // Ratio higher means better.
-
-            return (reward * boundedRatio) - (penalty * (1 - boundedRatio));
+            return boundedPoints * ((2 * boundedRatio) - 1);
         }
 
         private static double ClampReward(double value)
         {
             return Math.Clamp(value, 0, MaxRewardPoints);
-        }
-
-        private static double ClampPenalty(double value)
-        {
-            return Math.Clamp(value, 0, MaxPenaltyPoints);
         }
 
         private static double ClampRatio(double value)
