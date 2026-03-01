@@ -237,7 +237,7 @@ const formatTime = (time?: string) => {
                     No suggestions found for current preferences.
                 </div>
 
-                <div v-elseif="!requestError" class="space-y-3">
+                <div v-else-if="!requestError" class="space-y-3">
                     <Accordion type="multiple" :default-value="['bad-layout', 'good-layouts']" class="space-y-3">
                         <AccordionItem value="good-layouts"
                             class="overflow-hidden rounded-md border border-green-200 bg-green-50/30 px-4">

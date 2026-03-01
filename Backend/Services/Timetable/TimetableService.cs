@@ -139,7 +139,7 @@ public class TimetableService : ITimetableService
         List<CourseSection>? freeElectiveCourseSections = null,
         int freeElectiveCreditsRequired = 0)
     {
-        if (mustCourseSections == null || mustCourseSections.Count == 0)
+        if (mustCourseSections.Count == 0)
         {
             return new List<TimeTableLayout>();
         }
@@ -147,10 +147,9 @@ public class TimetableService : ITimetableService
         var finalLayouts = new List<TimeTableLayout>();
 
         var mustLayouts = GenerateMustCourseLayouts(mustCourseSections);
-
         if (mustLayouts.Count == 0)
         {
-            return new List<TimeTableLayout>();
+            throw new InvalidOperationException("Unable to create a full timetable schedule because the required courses in this semester are conflicted. Please contact the Programme Director for support.");
         }
 
         // Console.WriteLine($"Must Layouts Count: {mustLayouts.Count}");
@@ -172,9 +171,9 @@ public class TimetableService : ITimetableService
                 layoutsWithOptional.AddRange(expandedLayouts);
             }
 
-            if (layoutsWithOptional.Count == 0 && mustLayouts.Count > 0)
+            if (layoutsWithOptional.Count == 0)
             {
-                throw new InvalidOperationException("Unable to generate timetable because required sections conflict with each other. Please choose a different section/instructor and try again.");
+                throw new InvalidOperationException("Unable to create a full timetable schedule because the required courses in this semester are conflicted. Please contact the Programme Director for support.");
             }
         }
         else
