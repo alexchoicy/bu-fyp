@@ -34,6 +34,21 @@ const blockTimes = ref<BlockTimes>({});
 
 const route = useRoute();
 
+const generatedScore = computed(() => {
+  const rawScore = route.query.score;
+  const scoreValue = Array.isArray(rawScore) ? rawScore[0] : rawScore;
+  if (typeof scoreValue !== 'string') return null;
+
+  const parsedScore = Number(scoreValue);
+  return Number.isFinite(parsedScore) ? parsedScore : null;
+});
+
+useHead(() => ({
+  title: generatedScore.value !== null
+    ? `Timetable Planner - Score ${generatedScore.value.toFixed(2)}`
+    : 'Timetable Planner',
+}));
+
 type DecodedTimetable = {
   sections: Section[];
   blockTimes: BlockTimes;
@@ -136,7 +151,7 @@ const handleDeleteBlockTime = (day: number, itemId: string) => {
           <h2 class="font-medium text-sm">Courses & Sections</h2>
         </div>
         <div class="w-full space-y-2">
-          <Button class=" w-full">
+          <Button class="w-full" asChild>
             <NuxtLink to="/timetable/generation">
               Timetable Generation
             </NuxtLink>

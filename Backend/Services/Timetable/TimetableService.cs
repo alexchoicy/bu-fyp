@@ -171,6 +171,11 @@ public class TimetableService : ITimetableService
 
                 layoutsWithOptional.AddRange(expandedLayouts);
             }
+
+            if (layoutsWithOptional.Count == 0 && mustLayouts.Count > 0)
+            {
+                throw new InvalidOperationException("Unable to generate timetable because required sections conflict with each other. Please choose a different section/instructor and try again.");
+            }
         }
         else
         {
@@ -265,20 +270,13 @@ public class TimetableService : ITimetableService
                 }
             }
 
-            // If no section from this group fits, skip this group and continue
             if (!addedSection)
             {
-                BacktrackOptional(groupIndex + 1);
+                return;
             }
         }
 
         BacktrackOptional(0);
-
-        // If no optional sections could be added, return the base layout
-        if (results.Count == 0)
-        {
-            results.Add(baseLayout);
-        }
 
         return results;
     }
