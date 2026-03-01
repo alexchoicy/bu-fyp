@@ -7,6 +7,7 @@ namespace Backend.Services.Timetable
 {
     public static class TimetableLayoutScorer
     {
+        private const double MinRewardPoints = -3.0;
         private const double MaxRewardPoints = 3.0;
 
         public static double ScoreTimetableLayout(TimeTableLayout layout, TimetableScoring scoring)
@@ -245,7 +246,7 @@ namespace Backend.Services.Timetable
 
         private static double ClampReward(double value)
         {
-            return Math.Clamp(value, 0, MaxRewardPoints);
+            return Math.Clamp(value, MinRewardPoints, MaxRewardPoints);
         }
 
         private static double ClampRatio(double value)

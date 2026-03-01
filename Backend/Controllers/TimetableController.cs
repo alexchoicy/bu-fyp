@@ -59,6 +59,7 @@ namespace Backend.Controllers
         }
         [HttpPost("suggestions")]
         [ProducesResponseType(typeof(TimetableSuggestionsResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> GetCourseSuggestions([FromBody] TimetableGenerationRequestDto request)
         {
             try
@@ -70,6 +71,11 @@ namespace Backend.Controllers
                 }
                 var suggestions = await _timetableService.GetSuggestionsTimetableAsync(userId, request);
                 return Ok(suggestions);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Timetable generation blocked due to required section conflicts");
+                return Conflict(new { message = ex.Message });
             }
             catch (Exception ex)
             {

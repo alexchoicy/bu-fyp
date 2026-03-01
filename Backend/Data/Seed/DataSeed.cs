@@ -20,6 +20,7 @@ public class DataSeed
         
         await ProgrammeSeed.SeedAsync(context);
         await CourseSeed.SeedAsync(context, userManager, aiProviderFactory);
+        await DemoConflictSeed.SeedAsync(context, userManager);
     }
 
     private static async Task SeedTermsAsync(AppDbContext context)

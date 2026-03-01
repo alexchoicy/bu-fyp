@@ -1335,7 +1335,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/suggestions": {
+    "/api/timetable/suggestions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1466,9 +1466,7 @@ export interface components {
         };
         CompactGap: {
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
             /** Format: double */
             maxGapMinutes?: number | string;
             /** Format: time */
@@ -1593,9 +1591,7 @@ export interface components {
             /** Format: time */
             preferredEndTime?: string;
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
         };
         /** @enum {unknown} */
         Grade: "A" | "AMinus" | "BPlus" | "B" | "BMinus" | "CPlus" | "C" | "CMinus" | "D" | "E" | "F" | "DT" | "I" | "S" | "U" | "W" | "IP" | "NA" | null;
@@ -1757,9 +1753,7 @@ export interface components {
             /** Format: time */
             preferredStartTime?: string;
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
         };
         /** @enum {unknown} */
         StudentCourseStatus: "Enrolled" | "Completed" | "Dropped" | "Planned" | "Withdrawn" | "Failed" | "Exemption";
@@ -1771,20 +1765,22 @@ export interface components {
         TimeTableAssessmentScoring: {
             category?: components["schemas"]["AssessmentCategory"];
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
         };
         TimetableAssessmentShape: {
             assessmentCategoryScores?: components["schemas"]["TimeTableAssessmentScoring"][];
         };
         TimetableDailyLoadScore: {
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
             /** Format: double */
             idealActiveDays?: number | string;
+        };
+        TimetableDemoBadLayoutDto: {
+            sections?: components["schemas"]["TimetableSectionDto"][];
+            /** Format: double */
+            finalScore?: number | string;
+            scoreReasons?: string[];
         };
         TimetableEntryDto: {
             /** Format: int32 */
@@ -1855,9 +1851,7 @@ export interface components {
         };
         TimetableScoringFreeDayScore: {
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
         };
         TimetableScoringGroupWeight: {
             /** Format: double */
@@ -1871,9 +1865,7 @@ export interface components {
         };
         TimetableScoringLongDayScore: {
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
             /** Format: double */
             maxMinutesPerDay?: number | string;
         };
@@ -1885,9 +1877,7 @@ export interface components {
         };
         TimetableScoringSingleClassDayScore: {
             /** Format: double */
-            rewardPoints?: number | string;
-            /** Format: double */
-            penaltyPoints?: number | string;
+            points?: number | string;
         };
         TimetableSectionDto: {
             /** Format: int32 */
@@ -1903,7 +1893,8 @@ export interface components {
             scoreReasons?: string[];
         };
         TimetableSuggestionsResponseDto: {
-            layouts?: components["schemas"]["TimetableSuggestionLayoutDto"][];
+            recommendedLayouts?: components["schemas"]["TimetableSuggestionLayoutDto"][];
+            demoBadLayout?: null | components["schemas"]["TimetableDemoBadLayoutDto"];
             errors?: string[];
         };
         TLAs: {
