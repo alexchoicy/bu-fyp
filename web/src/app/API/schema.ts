@@ -1273,6 +1273,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/suggested-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SuggestedScheduleResponseDto"];
+                        "application/json": components["schemas"]["SuggestedScheduleResponseDto"];
+                        "text/json": components["schemas"]["SuggestedScheduleResponseDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/timetable": {
         parameters: {
             query?: never;
@@ -1368,6 +1423,17 @@ export interface paths {
                         "text/plain": components["schemas"]["TimetableSuggestionsResponseDto"];
                         "application/json": components["schemas"]["TimetableSuggestionsResponseDto"];
                         "text/json": components["schemas"]["TimetableSuggestionsResponseDto"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1757,6 +1823,46 @@ export interface components {
         };
         /** @enum {unknown} */
         StudentCourseStatus: "Enrolled" | "Completed" | "Dropped" | "Planned" | "Withdrawn" | "Failed" | "Exemption";
+        SuggestedScheduleItemDto: {
+            /** Format: int32 */
+            id?: number | string;
+            /** Format: int32 */
+            studyYear?: number | string;
+            /** Format: int32 */
+            termId?: number | string;
+            termName?: string;
+            /** Format: int32 */
+            courseId?: null | number | string;
+            courseCode?: null | string;
+            courseNumber?: null | string;
+            courseName?: null | string;
+            /** Format: int32 */
+            courseCredit?: null | number | string;
+            isCoreElective?: boolean;
+            isFreeElective?: boolean;
+            /** Format: double */
+            credits?: null | number | string;
+            itemType?: string;
+        };
+        SuggestedScheduleResponseDto: {
+            /** Format: int32 */
+            currentStudyYear?: number | string;
+            /** Format: int32 */
+            currentTermId?: number | string;
+            currentTermName?: string;
+            years?: components["schemas"]["SuggestedScheduleYearDto"][];
+        };
+        SuggestedScheduleTermDto: {
+            /** Format: int32 */
+            termId?: number | string;
+            termName?: string;
+            items?: components["schemas"]["SuggestedScheduleItemDto"][];
+        };
+        SuggestedScheduleYearDto: {
+            /** Format: int32 */
+            studyYear?: number | string;
+            terms?: components["schemas"]["SuggestedScheduleTermDto"][];
+        };
         TermResponseDto: {
             /** Format: int32 */
             id?: number | string;

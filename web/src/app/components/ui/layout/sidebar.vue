@@ -20,6 +20,10 @@ const navigationUser = [
     title: "Programmes",
     icon: GraduationCap,
     href: "/user/programme",
+    items: [
+      { title: "My Programme", href: "/user/programme" },
+      { title: "Suggested Schedule", href: "/user/suggested-schedule" },
+    ],
   },
   {
     title: "Courses",

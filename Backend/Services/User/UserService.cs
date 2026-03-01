@@ -11,6 +11,7 @@ public interface IUserService
     Task<List<UserCourseDto>> GetStudentStudyCoursesAsync(string userId);
     Task<bool> AddStudentStudyCoursesAsync(string userId, List<CreateStudentCourseDto> courses);
     Task<AcademicProgressDto> GetAcademicProgressAsync(string userId);
+    Task<SuggestedScheduleResponseDto> GetSuggestedScheduleAsync(string userId);
 }
 
 public class UserService : IUserService
@@ -163,5 +164,97 @@ public class UserService : IUserService
 
         return progress;
     }
-}
 
+    public async Task<SuggestedScheduleResponseDto> GetSuggestedScheduleAsync(string userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        var currentStudyYear = user?.GetCurrentStudyYear() ?? 0;
+
+        var month = DateTime.Now.Month;
+        var currentTermId = month switch
+        {
+            >= 9 and <= 12 => 1,
+            >= 1 and <= 6 => 2,
+            _ => 3,
+        };
+
+        var currentTermName = await _context.Terms
+            .Where(term => term.Id == currentTermId)
+            .Select(term => term.Name)
+            .FirstOrDefaultAsync()
+            ?? $"Semester {currentTermId}";
+
+        var programmeVersionId = await _context.Set<StudentProgramme>()
+            .Where(sp => sp.StudentId == userId)
+            .Select(sp => sp.ProgrammeVersionId)
+            .FirstOrDefaultAsync();
+
+        if (programmeVersionId == 0)
+        {
+            return new SuggestedScheduleResponseDto
+            {
+                CurrentStudyYear = currentStudyYear,
+                CurrentTermId = currentTermId,
+                CurrentTermName = currentTermName,
+            };
+        }
+
+        var scheduleRows = await _context.Set<ProgrammeSuggestedCourseSchedule>()
+            .Where(ps => ps.ProgrammeVersionId == programmeVersionId)
+            .Include(ps => ps.Term)
+            .Include(ps => ps.Course)
+                .ThenInclude(c => c!.Code)
+            .OrderBy(ps => ps.StudyYear)
+            .ThenBy(ps => ps.TermId)
+            .ThenBy(ps => ps.Id)
+            .ToListAsync();
+
+        var years = scheduleRows
+            .GroupBy(ps => ps.StudyYear)
+            .OrderBy(group => group.Key)
+            .Select(yearGroup => new SuggestedScheduleYearDto
+            {
+                StudyYear = yearGroup.Key,
+                Terms = yearGroup
+                    .GroupBy(ps => new { ps.TermId, ps.Term.Name })
+                    .OrderBy(termGroup => termGroup.Key.TermId)
+                    .Select(termGroup => new SuggestedScheduleTermDto
+                    {
+                        TermId = termGroup.Key.TermId,
+                        TermName = termGroup.Key.Name,
+                        Items = termGroup
+                            .Select(ps => new SuggestedScheduleItemDto
+                            {
+                                Id = ps.Id,
+                                StudyYear = ps.StudyYear,
+                                TermId = ps.TermId,
+                                TermName = ps.Term.Name,
+                                CourseId = ps.CourseId,
+                                CourseCode = ps.Course?.Code?.Tag,
+                                CourseNumber = ps.Course?.CourseNumber,
+                                CourseName = ps.Course?.Name,
+                                CourseCredit = ps.Course?.Credit,
+                                IsCoreElective = ps.IsCoreElective,
+                                IsFreeElective = ps.IsFreeElective,
+                                Credits = ps.Credits,
+                                ItemType = ps.IsFreeElective
+                                    ? "FreeElective"
+                                    : ps.IsCoreElective
+                                        ? "CoreElective"
+                                        : "Course",
+                            })
+                            .ToList(),
+                    })
+                    .ToList(),
+            })
+            .ToList();
+
+        return new SuggestedScheduleResponseDto
+        {
+            CurrentStudyYear = currentStudyYear,
+            CurrentTermId = currentTermId,
+            CurrentTermName = currentTermName,
+            Years = years,
+        };
+    }
+}
