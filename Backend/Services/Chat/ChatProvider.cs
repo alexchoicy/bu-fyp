@@ -67,7 +67,7 @@ public class ChatProvider
 
         if (conversation is null)
         {
-            throw new InvalidOperationException("Conversation not found or access denied");
+            throw new KeyNotFoundException("Conversation not found or access denied");
         }
 
         var message = new Message
@@ -105,6 +105,11 @@ public class ChatProvider
             var messages = await dbContext.Conversations
                 .Where(c => c.Id == roomId && c.UserId == userId)
                 .SelectMany(c => c.Messages)
+                .Where(m =>
+                    m.Status == MessageStatus.Complete
+                    && !string.IsNullOrWhiteSpace(m.Content)
+                    && (m.Role == MessageRole.User || m.Role == MessageRole.Assistant)
+                )
                 .OrderBy(m => m.CreatedAt)
                 .ToListAsync();
 
@@ -118,7 +123,13 @@ public class ChatProvider
             var aiProvider = aiProviderFactory.GetDefaultProvider();
 
             var response = await aiProvider.GenerateChatResponseAsync(messages);
-            var content = response.LastOrDefault()?.Content[0].Text ?? string.Empty;
+            var content = response
+                .OfType<OpenAI.Chat.AssistantChatMessage>()
+                .LastOrDefault()?
+                .Content
+                .Select(part => part.Text)
+                .FirstOrDefault(text => !string.IsNullOrWhiteSpace(text))
+                ?? string.Empty;
 
             await UpdateMessageAsync(pendingMessageId, content, MessageStatus.Complete);
 
@@ -181,7 +192,7 @@ public class ChatProvider
 
         if (message is null)
         {
-            throw new InvalidOperationException("Message not found in conversation");
+            throw new KeyNotFoundException("Message not found in conversation");
         }
 
         return new MessageResponseDto

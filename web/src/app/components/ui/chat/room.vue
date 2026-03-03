@@ -21,12 +21,18 @@ const input = defineModel<string>();
 const isNewChat = ref(true);
 const messages = ref<Message[]>([]);
 const thisChat = ref<string>("");
+const isSending = ref(false);
 
 // This is for fetching message results later
 const lastMessageId = ref<string>("");
 
 
 const messagePollingInterval = 1000;
+
+const canSend = computed(() => {
+  const value = input.value?.trim() ?? "";
+  return value.length > 0 && lastMessageId.value === "" && !isSending.value;
+});
 
 const messagePoller = async () => {
   if (lastMessageId.value === "") return;
@@ -42,6 +48,15 @@ const messagePoller = async () => {
     if (result.status === MessageStatus.Complete) {
       messages.value.push(result);
       lastMessageId.value = "";
+    } else if (result.status === MessageStatus.Failed) {
+      messages.value.push({
+        ...result,
+        content:
+          result.content && result.content.trim().length > 0
+            ? result.content
+            : "Sorry, I couldn't generate a response. Please try again.",
+      });
+      lastMessageId.value = "";
     } else {
       // Still processing, will check again later
       console.log("Message still processing, will check again later.");
@@ -52,52 +67,71 @@ const messagePoller = async () => {
 };
 
 const onSend = async () => {
-  if (lastMessageId.value !== "") {
-    console.log("Fetching result for message ID:", lastMessageId.value);
+  const message = input.value?.trim() ?? "";
+
+  if (message.length === 0) {
     return;
   }
 
+  if (lastMessageId.value !== "") {
+    return;
+  }
+
+  if (isSending.value) {
+    return;
+  }
+
+  isSending.value = true;
+
   messages.value.push({
     role: Roles.User,
-    content: input.value!,
+    content: message,
+    status: MessageStatus.Complete,
     id: crypto.randomUUID(),
   });
 
-  if (isNewChat.value) {
-    const chatRoomId = await useNuxtApp().$api<
-      components["schemas"]["CreateRoomResponseDto"]
-    >("chat", {
-      method: "POST"
-    })
+  try {
+    if (isNewChat.value) {
+      const chatRoomId = await useNuxtApp().$api<
+        components["schemas"]["CreateRoomResponseDto"]
+      >("chat", {
+        method: "POST",
+      });
 
-    thisChat.value = chatRoomId.roomId!;
-    isNewChat.value = false;
-    console.log("Created new chat room with ID:", chatRoomId);
-  }
+      thisChat.value = chatRoomId.roomId!;
+      isNewChat.value = false;
+    }
 
-  const newMessageId = await useNuxtApp().$api<
-    components["schemas"]["SendMessageResponseDto"]
-  >(`chat/${thisChat.value}`, {
-    method: "POST",
-    body: {
-      message: input.value!,
-    },
-  });
-  // Um... any better way to do this?
-  // put this here so i don't need to find from the messages array
-  input.value = "";
-
-  lastMessageId.value = newMessageId.generatedId!;
-
-  console.log("Sent message, received message ID:", newMessageId);
-
-  setTimeout(function poll() {
-    messagePoller().then(() => {
-      if (lastMessageId.value !== "") {
-        setTimeout(poll, messagePollingInterval);
-      }
+    const newMessageId = await useNuxtApp().$api<
+      components["schemas"]["SendMessageResponseDto"]
+    >(`chat/${thisChat.value}`, {
+      method: "POST",
+      body: {
+        message,
+      },
     });
-  }, messagePollingInterval);
+
+    input.value = "";
+    lastMessageId.value = newMessageId.generatedId!;
+
+    setTimeout(function poll() {
+      messagePoller().then(() => {
+        if (lastMessageId.value !== "") {
+          setTimeout(poll, messagePollingInterval);
+        }
+      });
+    }, messagePollingInterval);
+  } catch (error) {
+    console.error("Failed to send message:", error);
+    messages.value.push({
+      role: Roles.Assistant,
+      content: "Sorry, your message could not be sent. Please try again.",
+      status: MessageStatus.Failed,
+      id: crypto.randomUUID(),
+    });
+  } finally {
+    isSending.value = false;
+  }
 
 };
 </script>
@@ -111,7 +145,7 @@ const onSend = async () => {
             {{ message.content }}
           </div>
         </div>
-        <div v-if="message.role === Roles.Assistance" class="pb-20 justify-start flex">
+        <div v-if="message.role === Roles.Assistant" class="pb-20 justify-start flex">
           {{ message.content }}
         </div>
       </div>
@@ -123,8 +157,8 @@ const onSend = async () => {
           <InputGroupAddon align="block-end" class="justify-between">
             <div />
             <div>
-              <InputGroupButton variant="default" class="rounded-full" size="icon-sm"
-                :disabled="!input || input.length === 0 || lastMessageId === ''" @click="onSend">
+              <InputGroupButton variant="default" class="rounded-full" size="icon-sm" :disabled="!canSend"
+                @click="onSend">
                 <ArrowUp class="size-4" />
                 <span class="sr-only">Send</span>
               </InputGroupButton>

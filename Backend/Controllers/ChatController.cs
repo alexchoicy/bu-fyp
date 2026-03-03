@@ -98,7 +98,22 @@ namespace Backend.Controllers
             }
 
             var history = await _chatProvider.GetChatHistoryAsync(guid, userId);
-            return Ok(history);
+
+            var response = new ChatHistoryResponseDto
+            {
+                Messages = history
+                    .Select(m => new MessageResponseDto
+                    {
+                        Id = m.Id.ToString(),
+                        Role = m.Role,
+                        Content = m.Content,
+                        Status = m.Status,
+                        CreatedAt = m.CreatedAt
+                    })
+                    .ToList()
+            };
+
+            return Ok(response);
         }
 
         //request the generation and return the generated message id
@@ -118,8 +133,19 @@ namespace Backend.Controllers
                 return Unauthorized();
             }
 
-            var generatedMessageId = await _chatProvider.SendMessageToRoomAsync(roomId, request.Message, userId);
-            return Ok(new { generatedId = generatedMessageId.ToString() });
+            try
+            {
+                var generatedMessageId = await _chatProvider.SendMessageToRoomAsync(roomId, request.Message, userId);
+                return Ok(new { generatedId = generatedMessageId.ToString() });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
         }
 
         //SEE later
@@ -147,7 +173,7 @@ namespace Backend.Controllers
                 var messageResponse = await _chatProvider.GetMessageResultAsync(roomGuid, msgGuid, userId);
                 return Ok(messageResponse);
             }
-            catch (InvalidOperationException ex)
+            catch (KeyNotFoundException ex)
             {
                 return NotFound(new { error = ex.Message });
             }

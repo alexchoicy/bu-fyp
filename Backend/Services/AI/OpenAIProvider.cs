@@ -542,18 +542,22 @@ public class OpenAIProvider : IAIProvider
             CancellationToken cancellationToken
         )
         {
-            string? body =
-                request.Content != null
-                    ? await request.Content.ReadAsStringAsync(cancellationToken)
-                    : null;
-            _logger.LogInformation(
-                "OpenAI request {Method} {Uri}\nHeaders: {Headers}\nBody: {Body}",
+            _logger.LogDebug(
+                "OpenAI request {Method} {Uri}",
                 request.Method,
-                request.RequestUri,
-                request.Headers,
-                body
+                request.RequestUri
             );
-            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            _logger.LogDebug(
+                "OpenAI response {StatusCode} for {Method} {Uri}",
+                response.StatusCode,
+                request.Method,
+                request.RequestUri
+            );
+
+            return response;
         }
     }
 }
