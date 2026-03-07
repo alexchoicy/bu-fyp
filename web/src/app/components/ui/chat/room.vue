@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUp } from "lucide-vue-next";
+import { ArrowUp, LoaderCircle } from "lucide-vue-next";
 import type { components } from "~/API/schema";
 
 type Message = components["schemas"]["MessageResponseDto"]
@@ -22,10 +22,23 @@ const isNewChat = ref(true);
 const messages = ref<Message[]>([]);
 const thisChat = ref<string>("");
 const isSending = ref(false);
+const messageViewport = ref<HTMLElement | null>(null)
 
 // This is for fetching message results later
 const lastMessageId = ref<string>("");
 
+const scrollToBottom = async (behavior: ScrollBehavior = "smooth") => {
+  await nextTick()
+
+  if (!messageViewport.value) {
+    return
+  }
+
+  messageViewport.value.scrollTo({
+    top: messageViewport.value.scrollHeight,
+    behavior,
+  })
+}
 
 const messagePollingInterval = 1000;
 
@@ -46,16 +59,28 @@ const messagePoller = async () => {
     );
 
     if (result.status === MessageStatus.Complete) {
-      messages.value.push(result);
+      const index = messages.value.findIndex(
+        (msg) => msg.id === lastMessageId.value
+      );
+      if (index !== -1) {
+        messages.value[index] = result;
+      }
+
       lastMessageId.value = "";
+      scrollToBottom();
     } else if (result.status === MessageStatus.Failed) {
-      messages.value.push({
-        ...result,
-        content:
-          result.content && result.content.trim().length > 0
-            ? result.content
-            : "Sorry, I couldn't generate a response. Please try again.",
-      });
+      const index = messages.value.findIndex(
+        (msg) => msg.id === lastMessageId.value
+      );
+      if (index !== -1) {
+        messages.value[index] = {
+          ...result,
+          content:
+            result.content && result.content.trim().length > 0
+              ? result.content
+              : "Sorry, I couldn't generate a response. Please try again.",
+        };
+      }
       lastMessageId.value = "";
     } else {
       // Still processing, will check again later
@@ -114,6 +139,14 @@ const onSend = async () => {
     input.value = "";
     lastMessageId.value = newMessageId.generatedId!;
 
+    messages.value.push({
+      role: Roles.Assistant,
+      content: "",
+      status: MessageStatus.Pending,
+      id: lastMessageId.value,
+    });
+
+
     setTimeout(function poll() {
       messagePoller().then(() => {
         if (lastMessageId.value !== "") {
@@ -123,12 +156,18 @@ const onSend = async () => {
     }, messagePollingInterval);
   } catch (error) {
     console.error("Failed to send message:", error);
-    messages.value.push({
-      role: Roles.Assistant,
-      content: "Sorry, your message could not be sent. Please try again.",
-      status: MessageStatus.Failed,
-      id: crypto.randomUUID(),
-    });
+    const index = messages.value.findIndex(
+      (msg) => msg.id === lastMessageId.value
+    );
+    if (index !== -1) {
+      messages.value[index] = {
+        ...messages.value[index],
+        content:
+          "Sorry, I couldn't send your message. Please try again.",
+        status: MessageStatus.Failed,
+      };
+    }
+    scrollToBottom("smooth");
   } finally {
     isSending.value = false;
   }
@@ -138,15 +177,32 @@ const onSend = async () => {
 
 <template>
   <div class="flex flex-col h-full">
-    <div class="flex-1 overflow-y-auto p-4">
+    <div ref="messageViewport" class="flex-1 overflow-y-auto p-4">
       <div v-for="message in messages" :key="message.id" class="">
         <div v-if="message.role === Roles.User" class="mb-2 flex justify-end">
           <div class="inline-block bg-secondary p-2 rounded-lg">
-            {{ message.content }}
+            <UiChatMessageContent :content="message.content" />
           </div>
         </div>
         <div v-if="message.role === Roles.Assistant" class="pb-20 justify-start flex">
-          {{ message.content }}
+          <template v-if="message.status === MessageStatus.Pending">
+            <div class="space-y-3 py-1">
+              <div class="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <LoaderCircle class="size-4 animate-spin" />
+                Thinking through your request...
+              </div>
+              <div class="space-y-2">
+                <Skeleton class="h-4 w-5/6" />
+                <Skeleton class="h-4 w-4/6" />
+                <Skeleton class="h-4 w-3/6" />
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div class="inline-block p-2 rounded-lg">
+              <UiChatMessageContent :content="message.content" />
+            </div>
+          </template>
         </div>
       </div>
     </div>

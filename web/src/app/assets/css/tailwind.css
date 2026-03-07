@@ -114,7 +114,114 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+
+@layer components {
+  .chat-markdown {
+    @apply text-sm leading-7 break-words text-card-foreground;
+  }
+
+  .chat-markdown>*+* {
+    margin-top: 0.9rem;
+  }
+
+  .chat-markdown h1,
+  .chat-markdown h2,
+  .chat-markdown h3,
+  .chat-markdown h4 {
+    @apply font-semibold tracking-tight text-foreground;
+  }
+
+  .chat-markdown h1 {
+    @apply text-2xl;
+  }
+
+  .chat-markdown h2 {
+    @apply text-xl;
+  }
+
+  .chat-markdown h3 {
+    @apply text-lg;
+  }
+
+  .chat-markdown p,
+  .chat-markdown li,
+  .chat-markdown td,
+  .chat-markdown th {
+    @apply text-sm leading-7;
+  }
+
+  .chat-markdown ul,
+  .chat-markdown ol {
+    @apply space-y-2 pl-5;
+  }
+
+  .chat-markdown ul {
+    list-style: disc;
+  }
+
+  .chat-markdown ol {
+    list-style: decimal;
+  }
+
+  .chat-markdown a {
+    @apply font-medium text-cyan-700 underline decoration-cyan-300 underline-offset-4 transition-colors;
+  }
+
+  .chat-markdown a:hover {
+    @apply text-cyan-900 decoration-cyan-500;
+  }
+
+  .chat-markdown strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .chat-markdown blockquote {
+    @apply rounded-r-2xl border-l-4 border-amber-300 bg-amber-50/80 px-4 py-3 text-amber-950;
+  }
+
+  .chat-markdown :not(pre)>code {
+    @apply rounded-md bg-amber-100 px-1.5 py-0.5 font-mono text-[0.84em] text-amber-950;
+  }
+
+  .chat-markdown pre {
+    @apply relative overflow-x-auto rounded-2xl border border-slate-800/60 bg-slate-950 px-4 py-4 text-slate-50 shadow-sm;
+  }
+
+  .chat-markdown pre[data-language]:not([data-language=""]) {
+    padding-top: 2.75rem;
+  }
+
+  .chat-markdown pre[data-language]:not([data-language=""])::before {
+    content: attr(data-language);
+    @apply absolute left-4 top-3 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[0.65rem] tracking-[0.18em] uppercase text-slate-300;
+  }
+
+  .chat-markdown pre code {
+    @apply block bg-transparent p-0 font-mono text-[0.9em] leading-6 text-inherit;
+    white-space: pre;
+  }
+
+  .chat-markdown table {
+    @apply my-4 min-w-full border-collapse overflow-hidden rounded-2xl border border-border/70 bg-background/70;
+  }
+
+  .chat-markdown thead {
+    @apply bg-muted/70;
+  }
+
+  .chat-markdown th,
+  .chat-markdown td {
+    @apply border-b border-border/70 px-3 py-2 align-top;
+  }
+
+  .chat-markdown tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
 }
