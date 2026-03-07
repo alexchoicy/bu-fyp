@@ -96,7 +96,7 @@ public class ChatProvider
     {
         try
         {
-            _logger.LogInformation("Starting background generation for message {MessageId}", pendingMessageId);
+            // _logger.LogInformation("Starting background generation for message {MessageId}", pendingMessageId);
 
             await using var scope = _scopeFactory.CreateAsyncScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -133,7 +133,7 @@ public class ChatProvider
 
             await UpdateMessageAsync(pendingMessageId, content, MessageStatus.Complete);
 
-            _logger.LogInformation("Completed generation for message {MessageId}", pendingMessageId);
+            // _logger.LogInformation("Completed generation for message {MessageId}", pendingMessageId);
         }
         catch (Exception ex)
         {

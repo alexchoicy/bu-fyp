@@ -49,7 +49,7 @@ public static class OpenAIFunctions
                     },
                     "Year": {
                       "type": "integer",
-                      "description": "The academic year for which to retrieve course sections, e.g. 2023 = the 2023-2024 academic year. If the query has no specific year, use the current academic year."
+                      "description": "The academic year for which to retrieve course sections, e.g. 2025 = the 2025-2026 academic year. If the query has no specific year, use the current academic year."
                     },
                     "TermId": {
                       "type": "integer",
@@ -262,6 +262,40 @@ public static class OpenAIFunctions
         }
     }
 
+    public static class ChatHelper
+    {
+        public static string courseSectionToTable(AIChatbotCourseSectionsDto courseSectionsDto)
+        {
+            if (courseSectionsDto.Sections == null || !courseSectionsDto.Sections.Any())
+                return "No course sections available.";
+
+            var table = "Course Sections:\n";
+            table += "Section Number | Year | Term | Meeting Type | Day | Start Time | End Time\n";
+            table += "---------------|------|------|--------------|-----|------------|---------\n";
+
+            var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+            foreach (var section in courseSectionsDto.Sections)
+            {
+                if (section.Meetings == null || !section.Meetings.Any())
+                {
+                    table += $"{section.SectionNumber} | {section.Year} | {section.TermId} | No meetings available\n";
+                }
+                else
+                {
+
+
+                    foreach (var meeting in section.Meetings)
+                    {
+                        table += $"{section.SectionNumber} | {section.Year} | {section.TermId} | {meeting.MeetingType} | {daysOfWeek[meeting.Day]} | {meeting.StartTime:hh\\:mm} | {meeting.EndTime:hh\\:mm}\n";
+                    }
+                }
+            }
+            return table;
+        }
+    }
+
+
     public static class SystemPrompts
     {
         public const string ExtractAssessmentMethods =
@@ -361,6 +395,8 @@ public static class OpenAIFunctions
             $@"You are a helpful academic advisor assistant for a university. 
             You help students with information about courses, programmes, requirements, and academic guidance.
             Provide clear, concise, and accurate responses. If you are unable to find the information requested by the user, respond with: ""I'm sorry, I can't find related information.
+            If the Tool response a Markdown table, return the table content directly without adding extra formatting or explanations.
+            Return plain Markdown content directly. Do not wrap entire answers in triple backticks or fenced code blocks unless the user explicitly asks for code.
             You should mostly call {nameof(DatabaseQueries.GetPoliciesByQuery)} to retrieve relevant policy sections to answer user queries about university policies.
             Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Grade related info, you should check if the Grade is updated by user in the AcademicYear and Term.
             Terms ID are as follows:

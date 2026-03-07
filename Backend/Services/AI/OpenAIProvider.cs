@@ -1,5 +1,6 @@
 using System.ClientModel;
 using System.ClientModel.Primitives;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Azure.AI.OpenAI;
@@ -277,6 +278,12 @@ public class OpenAIProvider : IAIProvider
         {
             ChatClient chatClient = _client.GetChatClient(_deploymentName);
 
+            var totalStopwatch = Stopwatch.StartNew();
+            var roundCount = 0;
+            var totalInputTokens = 0;
+            var totalOutputTokens = 0;
+            var totalTokens = 0;
+
             List<ChatMessage> messages = new List<ChatMessage>
             {
                 new SystemChatMessage(OpenAIFunctions.SystemPrompts.ChatAssistant),
@@ -305,6 +312,32 @@ public class OpenAIProvider : IAIProvider
             {
                 requiresAction = false;
                 ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
+                roundCount++;
+                var roundStopwatch = Stopwatch.StartNew();
+
+                roundStopwatch.Stop();
+
+                var usage = completion.Usage;
+                var inputTokens = usage?.InputTokenCount ?? 0;
+                var outputTokens = usage?.OutputTokenCount ?? 0;
+                var completionTotalTokens = usage?.TotalTokenCount ?? 0;
+
+                totalInputTokens += inputTokens;
+                totalOutputTokens += outputTokens;
+                totalTokens += completionTotalTokens;
+
+                _logger.LogInformation(
+                    "Chat completion round {RoundNumber} finished in {ElapsedMilliseconds} ms. FinishReason={FinishReason}, InputTokens={InputTokens}, OutputTokens={OutputTokens}, TotalTokens={TotalTokens}, ToolCalls={ToolCallCount}",
+                    roundCount,
+                    roundStopwatch.ElapsedMilliseconds,
+                    completion.FinishReason,
+                    inputTokens,
+                    outputTokens,
+                    completionTotalTokens,
+                    completion.ToolCalls.Count
+                );
+
+
                 switch (completion.FinishReason)
                 {
                     case ChatFinishReason.Stop:
@@ -481,7 +514,7 @@ public class OpenAIProvider : IAIProvider
                                                 new ToolChatMessage(
                                                     toolCall.Id,
                                                     ChatMessageContentPart.CreateTextPart(
-                                                        JsonSerializer.Serialize(toolResult)
+                                                        OpenAIFunctions.ChatHelper.courseSectionToTable(toolResult)
                                                     )
                                                 )
                                             );
@@ -517,7 +550,7 @@ public class OpenAIProvider : IAIProvider
                 }
             } while (requiresAction);
 
-            _logger.LogInformation("Generated chat response successfully");
+            // _logger.LogInformation("Generated chat response successfully");
             return messages;
         }
         catch (Exception ex)
