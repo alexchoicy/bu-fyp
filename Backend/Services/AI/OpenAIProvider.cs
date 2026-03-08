@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Azure.AI.OpenAI;
 using Backend.Data;
 using Backend.Models;
+using Backend.Services.Timetable;
 using OpenAI.Chat;
 using OpenAI.Embeddings;
 using Pgvector;
@@ -272,7 +273,7 @@ public class OpenAIProvider : IAIProvider
         }
     }
 
-    public async Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory)
+    public async Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId)
     {
         try
         {
@@ -303,7 +304,7 @@ public class OpenAIProvider : IAIProvider
 
             ChatCompletionOptions options = new ChatCompletionOptions()
             {
-                Tools = { OpenAIFunctions.ChatTools.GetCourseByCodeAndNumberTool, OpenAIFunctions.ChatTools.GetPoliciesByQueryTool, OpenAIFunctions.ChatTools.GetCourseSectionsByCourseIdTool },
+                Tools = { OpenAIFunctions.ChatTools.GetCourseByCodeAndNumberTool, OpenAIFunctions.ChatTools.GetPoliciesByQueryTool, OpenAIFunctions.ChatTools.GetCourseSectionsByCourseIdTool, OpenAIFunctions.ChatTools.GenerateTimetableSuggestionsTool },
             };
 
             bool requiresAction;
@@ -518,6 +519,63 @@ public class OpenAIProvider : IAIProvider
                                                     )
                                                 )
                                             );
+                                            break;
+                                        }
+                                    case nameof(TimetableService.GetSuggestionsTimetableAsync):
+                                        {
+                                            var request = JsonSerializer.Deserialize<TimetableGenerationRequestDto>(
+                                                toolCall.FunctionArguments,
+                                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                                            );
+
+                                            if (request == null)
+                                            {
+                                                messages.Add(
+                                                    new ToolChatMessage(
+                                                        toolCall.Id,
+                                                        ChatMessageContentPart.CreateTextPart(
+                                                            "Error: Invalid arguments provided to GenerateTimetableSuggestions."
+                                                        )
+                                                    )
+                                                );
+                                                continue;
+                                            }
+
+                                            try
+                                            {
+
+
+
+
+                                                // var toolResult = await _timetableService.GetChatSuggestionsTimetableAsync(
+                                                //     userId,
+                                                //     request
+                                                // );
+
+                                                // await SaveTimetableReminderAsync(conversationId, toolResult.AppliedRequest);
+
+                                                // messages.Add(
+                                                //     new ToolChatMessage(
+                                                //         toolCall.Id,
+                                                //         ChatMessageContentPart.CreateTextPart(
+                                                //             JsonSerializer.Serialize(toolResult, ToolJsonSerializerOptions)
+                                                //         )
+                                                //     )
+                                                // );
+                                            }
+                                            catch
+                                            {
+                                                messages.Add(
+                                                    new ToolChatMessage(
+                                                        toolCall.Id,
+                                                        ChatMessageContentPart.CreateTextPart(
+                                                            "Error: Unable to create a full timetable schedule because the required courses in this semester are conflicted. Please contact the Programme Director for support."
+                                                        )
+                                                    )
+                                                );
+                                            }
+
+
                                             break;
                                         }
                                     default:

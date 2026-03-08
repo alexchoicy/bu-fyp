@@ -33,7 +33,7 @@ public class GeminiProvider : IAIProvider
         {
             // Format course data using the shared helper
             string formattedText = EmbeddingHelper.FormatCourseDataForDomainTagEmbedding(courseTitle, aimsAndObjectives, courseContent);
-            
+
             // Create and return the embedding
             return await CreateEmbeddingAsync(formattedText);
         }
@@ -53,7 +53,7 @@ public class GeminiProvider : IAIProvider
         {
             // Format course data using the shared helper
             string formattedText = EmbeddingHelper.FormatCourseDataForSkillsTagEmbedding(aimsAndObjectives, cilos, courseContent, tlas, assessmentMethods);
-            
+
             // Create and return the embedding
             return await CreateEmbeddingAsync(formattedText);
         }
@@ -73,7 +73,7 @@ public class GeminiProvider : IAIProvider
         {
             // Format course data using the shared helper
             string formattedText = EmbeddingHelper.FormatCourseDataForContentTypesTagEmbedding(courseContent, tlas, assessmentMethods);
-            
+
             // Create and return the embedding
             return await CreateEmbeddingAsync(formattedText);
         }
@@ -97,7 +97,7 @@ public class GeminiProvider : IAIProvider
         throw new NotImplementedException();
     }
 
-    public Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory)
+    public Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId)
     {
         throw new NotImplementedException();
     }

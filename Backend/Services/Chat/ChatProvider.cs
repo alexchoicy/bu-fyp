@@ -122,7 +122,7 @@ public class ChatProvider
 
             var aiProvider = aiProviderFactory.GetDefaultProvider();
 
-            var response = await aiProvider.GenerateChatResponseAsync(messages);
+            var response = await aiProvider.GenerateChatResponseAsync(messages, userId);
             var content = response
                 .OfType<OpenAI.Chat.AssistantChatMessage>()
                 .LastOrDefault()?
