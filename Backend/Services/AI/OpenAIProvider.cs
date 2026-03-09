@@ -20,14 +20,18 @@ public class OpenAIProvider : IAIProvider
     private readonly ILogger<OpenAIProvider> _logger;
     private readonly AppDbContext _dbContext;
 
+    private readonly ITimetableService _timetableService;
+
     public OpenAIProvider(
         IConfiguration configuration,
         ILogger<OpenAIProvider> logger,
-        AppDbContext dbContext
+        AppDbContext dbContext,
+                ITimetableService timetableService
     )
     {
         _logger = logger;
         _dbContext = dbContext;
+        _timetableService = timetableService;
         string endpoint =
             configuration["AzureOpenAI:Endpoint"]
             ?? throw new ArgumentNullException("AzureOpenAI:Endpoint configuration is missing");
@@ -273,7 +277,7 @@ public class OpenAIProvider : IAIProvider
         }
     }
 
-    public async Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId)
+    public async Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId, Guid pendingMessageId)
     {
         try
         {
@@ -300,6 +304,10 @@ public class OpenAIProvider : IAIProvider
                 {
                     messages.Add(new AssistantChatMessage(msg.Content));
                 }
+                else if (msg.Role == MessageRole.Timetable_JSON_REQUEST)
+                {
+                    messages.Add(new SystemChatMessage($"Last used Timetable generated Request Json {msg.Content}"));
+                }
             }
 
             ChatCompletionOptions options = new ChatCompletionOptions()
@@ -308,6 +316,7 @@ public class OpenAIProvider : IAIProvider
             };
 
             bool requiresAction;
+            var timetableGenerationTime = 0;
 
             do
             {
@@ -523,18 +532,32 @@ public class OpenAIProvider : IAIProvider
                                         }
                                     case nameof(TimetableService.GetSuggestionsTimetableAsync):
                                         {
-                                            var request = JsonSerializer.Deserialize<TimetableGenerationRequestDto>(
-                                                toolCall.FunctionArguments,
-                                                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                                            );
-
-                                            if (request == null)
+                                            if (timetableGenerationTime >= 1)
                                             {
                                                 messages.Add(
                                                     new ToolChatMessage(
                                                         toolCall.Id,
                                                         ChatMessageContentPart.CreateTextPart(
-                                                            "Error: Invalid arguments provided to GenerateTimetableSuggestions."
+                                                            "Use the last generation, only generate one per each conversation."
+                                                        )
+                                                    )
+                                                );
+                                                continue;
+                                            }
+
+                                            var request = JsonSerializer.Deserialize<TimetableGenerationRequestDto>(
+                                                toolCall.FunctionArguments,
+                                                CreateToolJsonSerializerOptions()
+                                            );
+
+                                            string? validationError = null;
+                                            if (request == null || !TryValidateTimetableRequest(request, out validationError))
+                                            {
+                                                messages.Add(
+                                                    new ToolChatMessage(
+                                                        toolCall.Id,
+                                                        ChatMessageContentPart.CreateTextPart(
+                                                            validationError ?? "Error: Invalid arguments provided to GenerateTimetableSuggestions."
                                                         )
                                                     )
                                                 );
@@ -543,25 +566,33 @@ public class OpenAIProvider : IAIProvider
 
                                             try
                                             {
+                                                var toolResult = await _timetableService.GetSuggestionsTimetableAsync(
+                                                    userId,
+                                                    request
+                                                );
 
+                                                await _dbContext.Messages.AddAsync(new Message
+                                                {
+                                                    Id = Guid.NewGuid(),
+                                                    ConversationId = chatHistory.First().ConversationId,
+                                                    Role = MessageRole.Timetable_JSON_REQUEST,
+                                                    Content = JsonSerializer.Serialize(request),
+                                                    Status = MessageStatus.Complete,
+                                                    CreatedAt = DateTime.UtcNow,
+                                                    ReferencedMessageId = pendingMessageId,
+                                                });
 
+                                                await _dbContext.SaveChangesAsync();
 
-
-                                                // var toolResult = await _timetableService.GetChatSuggestionsTimetableAsync(
-                                                //     userId,
-                                                //     request
-                                                // );
-
-                                                // await SaveTimetableReminderAsync(conversationId, toolResult.AppliedRequest);
-
-                                                // messages.Add(
-                                                //     new ToolChatMessage(
-                                                //         toolCall.Id,
-                                                //         ChatMessageContentPart.CreateTextPart(
-                                                //             JsonSerializer.Serialize(toolResult, ToolJsonSerializerOptions)
-                                                //         )
-                                                //     )
-                                                // );
+                                                messages.Add(
+                                                    new ToolChatMessage(
+                                                        toolCall.Id,
+                                                        ChatMessageContentPart.CreateTextPart(
+                                                            OpenAIFunctions.ChatHelper.TimetableResultTOTable(_dbContext, toolResult)
+                                                        )
+                                                    )
+                                                );
+                                                timetableGenerationTime += 1;
                                             }
                                             catch
                                             {
@@ -574,7 +605,6 @@ public class OpenAIProvider : IAIProvider
                                                     )
                                                 );
                                             }
-
 
                                             break;
                                         }
@@ -608,6 +638,8 @@ public class OpenAIProvider : IAIProvider
                 }
             } while (requiresAction);
 
+            await GenerateSuggestionMessage(chatHistory, pendingMessageId);
+
             // _logger.LogInformation("Generated chat response successfully");
             return messages;
         }
@@ -617,6 +649,163 @@ public class OpenAIProvider : IAIProvider
             throw;
         }
     }
+
+    public async Task GenerateSuggestionMessage(List<Message> chatHistory, Guid lastMessageId)
+    {
+        ChatClient chatClient = _client.GetChatClient(_deploymentName);
+
+        var totalStopwatch = Stopwatch.StartNew();
+        var roundCount = 0;
+        var totalInputTokens = 0;
+        var totalOutputTokens = 0;
+        var totalTokens = 0;
+
+        List<ChatMessage> messages = new List<ChatMessage>
+            {
+                new SystemChatMessage(OpenAIFunctions.SystemPrompts.SuggestionUserPrompt),
+            };
+
+        foreach (var msg in chatHistory)
+        {
+            if (msg.Role == MessageRole.User)
+            {
+                messages.Add(new UserChatMessage(msg.Content));
+            }
+            else if (msg.Role == MessageRole.Assistant)
+            {
+                messages.Add(new AssistantChatMessage(msg.Content));
+            }
+            else if (msg.Role == MessageRole.Timetable_JSON_REQUEST)
+            {
+                messages.Add(new SystemChatMessage($"Last used Timetable generated Request Json {msg.Content}"));
+            }
+        }
+
+        ChatResponseFormat suggestionResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+                jsonSchemaFormatName: "SuggestionResponse",
+                jsonSchema: BinaryData.FromBytes(
+                        """
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "nextSuggestions": {
+                                            "type": "array",
+                                            "minItems": 2,
+                                            "maxItems": 4,
+                                            "items": {
+                                                "type": "string",
+                                                "minLength": 1
+                                            }
+                                        }
+                                    },
+                                    "required": ["nextSuggestions"]
+                                }
+                                """u8.ToArray()
+                ),
+                jsonSchemaIsStrict: true
+        );
+
+        ChatCompletionOptions options = new ChatCompletionOptions()
+        {
+            ResponseFormat = suggestionResponseFormat,
+            Tools = { OpenAIFunctions.ChatTools.GetCourseByCodeAndNumberTool, OpenAIFunctions.ChatTools.GetPoliciesByQueryTool, OpenAIFunctions.ChatTools.GetCourseSectionsByCourseIdTool, OpenAIFunctions.ChatTools.GenerateTimetableSuggestionsTool },
+        };
+
+        bool requiresAction;
+        do
+        {
+            requiresAction = false;
+            ChatCompletion completion = await chatClient.CompleteChatAsync(messages, options);
+            roundCount++;
+            var roundStopwatch = Stopwatch.StartNew();
+
+            roundStopwatch.Stop();
+
+            var usage = completion.Usage;
+            var inputTokens = usage?.InputTokenCount ?? 0;
+            var outputTokens = usage?.OutputTokenCount ?? 0;
+            var completionTotalTokens = usage?.TotalTokenCount ?? 0;
+
+            totalInputTokens += inputTokens;
+            totalOutputTokens += outputTokens;
+            totalTokens += completionTotalTokens;
+
+            _logger.LogInformation(
+                "Suggestion round {RoundNumber} finished in {ElapsedMilliseconds} ms. FinishReason={FinishReason}, InputTokens={InputTokens}, OutputTokens={OutputTokens}, TotalTokens={TotalTokens}, ToolCalls={ToolCallCount}",
+                roundCount,
+                roundStopwatch.ElapsedMilliseconds,
+                completion.FinishReason,
+                inputTokens,
+                outputTokens,
+                completionTotalTokens,
+                completion.ToolCalls.Count
+            );
+
+
+            switch (completion.FinishReason)
+            {
+                case ChatFinishReason.Stop:
+                    {
+                        Console.WriteLine("Suggestion generation completed with content: " + JsonSerializer.Serialize(completion.Content));
+
+                        await _dbContext.Messages.AddAsync(new Message
+                        {
+                            Id = Guid.NewGuid(),
+                            ConversationId = chatHistory.First().ConversationId,
+                            Role = MessageRole.Suggestions,
+                            Content = completion.Content[0].Text,
+                            Status = MessageStatus.Complete,
+                            CreatedAt = DateTime.UtcNow,
+                            ReferencedMessageId = lastMessageId,
+                        });
+
+                        await _dbContext.SaveChangesAsync();
+
+                        break;
+                    }
+                case ChatFinishReason.ToolCalls:
+                    {
+                        _logger.LogInformation(
+                            "Model requested {ToolCount} tool call(s)",
+                            completion.ToolCalls.Count
+                        );
+
+                        messages.Add(new AssistantChatMessage(completion));
+                        foreach (ChatToolCall toolCall in completion.ToolCalls)
+                        {
+                            messages.Add(
+                                new ToolChatMessage(
+                                    toolCall.Id,
+                                    ChatMessageContentPart.CreateTextPart(
+                                        "You should not call any tool."
+                                    )
+                                )
+                            );
+                        }
+
+                        requiresAction = true;
+                        break;
+                    }
+                case ChatFinishReason.Length:
+                    throw new NotImplementedException(
+                        "Incomplete model output due to MaxTokens parameter or token limit exceeded."
+                    );
+
+                case ChatFinishReason.ContentFilter:
+                    throw new NotImplementedException(
+                        "Omitted content due to a content filter flag."
+                    );
+
+                case ChatFinishReason.FunctionCall:
+                    throw new NotImplementedException("Deprecated in favor of tool calls.");
+                default:
+                    throw new NotImplementedException(completion.FinishReason.ToString());
+            }
+        } while (requiresAction);
+    }
+
+
 
     private sealed class LoggingHandler : DelegatingHandler
     {
@@ -650,5 +839,79 @@ public class OpenAIProvider : IAIProvider
 
             return response;
         }
+    }
+
+    private static JsonSerializerOptions CreateToolJsonSerializerOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+
+        options.Converters.Add(new JsonStringEnumConverter());
+        return options;
+    }
+
+    private static bool TryValidateTimetableRequest(
+        TimetableGenerationRequestDto request,
+        out string? validationError
+    )
+    {
+        validationError = null;
+
+        if (request.Scoring == null)
+        {
+            validationError = "Error: Missing scoring in GenerateTimetableSuggestions arguments.";
+            return false;
+        }
+
+        if (request.Filter == null)
+        {
+            validationError = "Error: Missing filter in GenerateTimetableSuggestions arguments.";
+            return false;
+        }
+
+        request.Filter.NoClassTime ??= new();
+
+        if (request.Scoring.GroupWeights == null
+            || request.Scoring.ScheduleShape == null
+            || request.Scoring.PreferenceShape == null
+            || request.Scoring.GapCompactnessShape == null
+            || request.Scoring.AssessmentShape == null)
+        {
+            validationError = "Error: Incomplete scoring configuration provided to GenerateTimetableSuggestions.";
+            return false;
+        }
+
+        if (request.Scoring.ScheduleShape.FreeDayScore == null
+            || request.Scoring.ScheduleShape.SingleClassDayScore == null
+            || request.Scoring.ScheduleShape.LongDayScore == null
+            || request.Scoring.ScheduleShape.DailyLoadScore == null)
+        {
+            validationError = "Error: Incomplete scheduleShape provided to GenerateTimetableSuggestions.";
+            return false;
+        }
+
+        if (request.Scoring.PreferenceShape.StartTimePreference == null
+            || request.Scoring.PreferenceShape.EndTimePreference == null)
+        {
+            validationError = "Error: Incomplete preferenceShape provided to GenerateTimetableSuggestions.";
+            return false;
+        }
+
+        if (request.Scoring.GapCompactnessShape.ShortGap == null)
+        {
+            validationError = "Error: Missing shortGap in GenerateTimetableSuggestions arguments.";
+            return false;
+        }
+
+        if (request.Scoring.AssessmentShape.AssessmentCategoryScores == null)
+        {
+            validationError = "Error: Missing assessmentCategoryScores in GenerateTimetableSuggestions arguments.";
+            return false;
+        }
+
+        return true;
     }
 }

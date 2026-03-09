@@ -31,37 +31,37 @@ namespace Backend.Controllers
             return Ok("Chat endpoint is working");
         }
 
-        [HttpGet("test")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> TestChat([FromQuery] string? prompt = null)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                return Unauthorized();
-            }
+        // [HttpGet("test")]
+        // [ProducesResponseType(StatusCodes.Status200OK)]
+        // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        // public async Task<IActionResult> TestChat([FromQuery] string? prompt = null)
+        // {
+        //     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //     if (string.IsNullOrWhiteSpace(userId))
+        //     {
+        //         return Unauthorized();
+        //     }
 
-            var aiProvider = _aiProviderFactory.GetDefaultProvider();
+        //     var aiProvider = _aiProviderFactory.GetDefaultProvider();
 
-            var chatHistory = new List<Message>
-            {
-                new Message
-                {
-                    Id = Guid.NewGuid(),
-                    ConversationId = Guid.Empty,
-                    Content = string.IsNullOrWhiteSpace(prompt)
-                        ? "Hi! Give me a one-sentence tip for picking courses this term."
-                        : prompt,
-                    Role = MessageRole.User,
-                    Status = MessageStatus.Complete,
-                    CreatedAt = DateTime.UtcNow
-                }
-            };
+        //     var chatHistory = new List<Message>
+        //     {
+        //         new Message
+        //         {
+        //             Id = Guid.NewGuid(),
+        //             ConversationId = Guid.Empty,
+        //             Content = string.IsNullOrWhiteSpace(prompt)
+        //                 ? "Hi! Give me a one-sentence tip for picking courses this term."
+        //                 : prompt,
+        //             Role = MessageRole.User,
+        //             Status = MessageStatus.Complete,
+        //             CreatedAt = DateTime.UtcNow
+        //         }
+        //     };
 
-            var response = await aiProvider.GenerateChatResponseAsync(chatHistory);
-            return Ok(new { response });
-        }
+        //     var response = await aiProvider.GenerateChatResponseAsync(chatHistory, userId, );
+        //     return Ok(new { response });
+        // }
 
 
         //ya just Create a simple room first
@@ -172,6 +172,35 @@ namespace Backend.Controllers
             {
                 var messageResponse = await _chatProvider.GetMessageResultAsync(roomGuid, msgGuid, userId);
                 return Ok(messageResponse);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+        }
+
+        [HttpGet("{roomId}/result/{messageId}/related")]
+        [ProducesResponseType(typeof(MessageRelatedDataResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetGeneratedRelatedData(string roomId, string messageId)
+        {
+            if (!Guid.TryParse(roomId, out var roomGuid) || !Guid.TryParse(messageId, out var msgGuid))
+            {
+                return BadRequest("Invalid room ID or message ID");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var relatedData = await _chatProvider.GetMessageRelatedDataAsync(roomGuid, msgGuid, userId);
+                return Ok(relatedData);
             }
             catch (KeyNotFoundException ex)
             {

@@ -12,5 +12,7 @@ public class Message
     // Foreign key to Conversation
     public Guid ConversationId { get; set; }
     public Conversation Conversation { get; set; }
+
+    public Guid? ReferencedMessageId { get; set; } // for suggestion messages
 }
 

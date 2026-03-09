@@ -101,4 +101,9 @@ public class GeminiProvider : IAIProvider
     {
         throw new NotImplementedException();
     }
+
+    public Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId, Guid pendingMessageId)
+    {
+        throw new NotImplementedException();
+    }
 }

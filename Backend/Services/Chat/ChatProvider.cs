@@ -4,6 +4,8 @@ using Backend.Models;
 using Backend.Services.AI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Backend.Services.Chat;
 
@@ -122,7 +124,7 @@ public class ChatProvider
 
             var aiProvider = aiProviderFactory.GetDefaultProvider();
 
-            var response = await aiProvider.GenerateChatResponseAsync(messages, userId);
+            var response = await aiProvider.GenerateChatResponseAsync(messages, userId, pendingMessageId);
             var content = response
                 .OfType<OpenAI.Chat.AssistantChatMessage>()
                 .LastOrDefault()?
@@ -203,5 +205,82 @@ public class ChatProvider
             Status = message.Status,
             CreatedAt = message.CreatedAt
         };
+    }
+
+    public async Task<MessageRelatedDataResponseDto> GetMessageRelatedDataAsync(Guid roomId, Guid messageId, string userId)
+    {
+        var message = await _dbContext.Messages
+            .Include(m => m.Conversation)
+            .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == roomId && m.Conversation.UserId == userId);
+
+        if (message is null)
+        {
+            throw new KeyNotFoundException("Message not found in conversation");
+        }
+
+        var relatedMessages = await _dbContext.Messages
+            .Where(m =>
+                m.ConversationId == roomId
+                && m.ReferencedMessageId == messageId
+                && m.Status == MessageStatus.Complete
+                && (m.Role == MessageRole.Suggestions || m.Role == MessageRole.Timetable_JSON_REQUEST)
+            )
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync();
+
+        var response = new MessageRelatedDataResponseDto();
+
+        var suggestionMessage = relatedMessages.LastOrDefault(m => m.Role == MessageRole.Suggestions);
+        if (!string.IsNullOrWhiteSpace(suggestionMessage?.Content))
+        {
+            try
+            {
+                var suggestionPayload = JsonSerializer.Deserialize<SuggestionPayloadDto>(
+                    suggestionMessage.Content,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+                response.NextSuggestions = suggestionPayload?.NextSuggestions ?? new List<string>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Unable to parse suggestions JSON for message {MessageId}", messageId);
+            }
+        }
+
+        var timetableToolMessages = relatedMessages
+            .Where(m => m.Role == MessageRole.Timetable_JSON_REQUEST && !string.IsNullOrWhiteSpace(m.Content));
+
+        foreach (var timetableToolMessage in timetableToolMessages)
+        {
+            try
+            {
+                var toolPayload = JsonSerializer.Deserialize<TimetableGenerationRequestDto>(
+                    timetableToolMessage.Content,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                if (toolPayload != null)
+                {
+                    response.TimetableTool.Add(toolPayload);
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Unable to parse timetable tool JSON for related message {RelatedMessageId} referenced by message {MessageId}",
+                    timetableToolMessage.Id,
+                    messageId
+                );
+            }
+        }
+
+        return response;
+    }
+
+    private sealed class SuggestionPayloadDto
+    {
+        [JsonPropertyName("nextSuggestions")]
+        public List<string> NextSuggestions { get; set; } = new();
     }
 }

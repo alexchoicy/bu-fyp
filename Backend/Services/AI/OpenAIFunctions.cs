@@ -1,4 +1,5 @@
-﻿using Backend.Data;
+﻿using System.Text;
+using Backend.Data;
 using Backend.Dtos.Courses;
 using Backend.Dtos.Facts;
 using Backend.Dtos.Policy;
@@ -85,345 +86,346 @@ public static class OpenAIFunctions
         public static readonly ChatTool GenerateTimetableSuggestionsTool = ChatTool.CreateFunctionTool(
             functionName: nameof(TimetableService.GetSuggestionsTimetableAsync),
             functionDescription: """
-            Generate timetable suggestions from user preferences. When to user call this tool, sometime they will just give simple request, change the weight when needed.
-            For time options in the Parameters, You will require to change to in the style of HH:MM:SS, for start it must be HH:30:00 and for end it must be HH:20:00, if the user give you time in other format, you need to convert it to the required format. For example, if the user give you 8:00, you need to convert it to 08:30:00, if the user give you 18:00, you need to convert it to 18:20:00.
-            In the point options, the number will bettwen -3 to 3, and the default value is 0, meaning it is neutral(ignored).
+                Generate timetable suggestions from user preferences.
+                Always return the full request object in the exact backend shape.
+
+                IMPORTANT INTERPRETATION RULES:
+                - Put something in filter only if the user describes a hard constraint that must never be violated.
+                - Hard constraints are statements like: "I can't", "I must avoid", "I am unavailable", "I absolutely cannot", "do not allow".
+                - Put something in scoring when the user expresses a preference, tendency, or dislike that may be violated if needed.
+                - Soft preferences are statements like: "I prefer", "I would like", "I don't like", "ideally", "better if possible".
+                - Example: "I don't like to have class earlier than 10am" is a soft preference and must NOT be placed in filter.
+                - Example: "I cannot attend classes before 10am on Mondays" is a hard constraint and should be placed in filter.noClassTime.
+
+                IMPORTANT scoring shape: scoring must contain exactly these sibling objects: groupWeights, scheduleShape, preferenceShape, gapCompactnessShape, assessmentShape.
+                Use HH:MM:SS for every time value.
+                Start-time fields must use HH:30:00 and end-time fields must use HH:20:00.
+                If the user does not specify values, use these defaults: earliestStart 08:30:00, latestEnd 20:20:00, preferredStartTime 09:30:00, preferredEndTime 18:20:00, ignoreGapStartTime 12:30:00, ignoreGapEndTime 14:20:00.
+                Use an empty array for noClassTime when there are no blocked periods.
+                Points must be between -3 and 3.
             """,
             functionParameters: BinaryData.FromBytes("""
-                {
+            {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "filter": {
                 "type": "object",
                 "additionalProperties": false,
+                "description": "Hard constraints only. Use this only for absolute unavailability or strict must-not-violate rules. Never place soft dislikes or preferences here.",
                 "properties": {
-                    "filter": {
+                    "noClassTime": {
+                    "type": "array",
+                    "description": "Blocked time windows where the student is absolutely unavailable and must not have classes. Use only for hard constraints like work, childcare, or religious commitments. Do not use for soft dislikes such as 'I don't like early classes'.",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                        "day": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6,
+                            "description": "Day of week used by the timetable data: 0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 = Sunday"
+                        },
+                        "start": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):30:00$",
+                            "description": "Block start time in HH:30:00 format, for example 09:30:00"
+                        },
+                        "end": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):20:00$",
+                            "description": "Block end time in HH:20:00 format, for example 12:20:00"
+                        }
+                        },
+                        "required": [
+                        "day",
+                        "start",
+                        "end"
+                        ]
+                    }
+                    }
+                },
+                "required": [
+                    "noClassTime"
+                ]
+                },
+                "scoring": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Soft ranking preferences only. Use this for 'prefer', 'don't like', 'ideally', and other non-mandatory wishes.",
+                "properties": {                    "groupWeights": {
                     "type": "object",
                     "additionalProperties": false,
-                    "description": "Hard timetable constraints.",
+                    "description": "Weight for scorer groups. These should sum to 1.",
                     "properties": {
-                        "noClassTime": {
+                        "schedule": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Weight for schedule shape."
+                        },
+                        "timePreference": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Weight for preferred start/end times."
+                        },
+                        "gap": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Weight for compact gaps."
+                        },
+                        "assessments": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Weight for preferred assessment mix."
+                        }
+                    },
+                    "required": [
+                        "schedule",
+                        "timePreference",
+                        "gap",
+                        "assessments"
+                    ]
+                    },
+                    "scheduleShape": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "freeDayScore": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Reward for more free days. Use 0 if neutral"
+                            }
+                        },
+                        "required": [
+                            "points"
+                        ]
+                        },
+                        "singleClassDayScore": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Reward for days with only one class block. Use 0 if neutral."
+                            }
+                        },
+                        "required": [
+                            "points"
+                        ]
+                        },
+                        "longDayScore": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Penalty or reward strength for long days"
+                            },
+                            "maxMinutesPerDay": {
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Preferred maximum active minutes per day. Use 360 when unspecified"
+                            }
+                        },
+                        "required": [
+                            "points",
+                            "maxMinutesPerDay"
+                        ]
+                        },
+                        "dailyLoadScore": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Penalty or reward strength for active-day count."
+                            },
+                            "idealActiveDays": {
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Preferred number of active days. Use 4 when unspecified."
+                            }
+                        },
+                        "required": [
+                            "points",
+                            "idealActiveDays"
+                        ]
+                        }
+                    },
+                    "required": [
+                        "freeDayScore",
+                        "singleClassDayScore",
+                        "longDayScore",
+                        "dailyLoadScore"
+                    ]
+                    },
+                    "preferenceShape": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "startTimePreference": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "preferredStartTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):30:00$",
+                            "description": "Preferred earliest start threshold in HH:30:00 format. Use 09:30:00 when unspecified"
+                            },
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Reward strength for meeting the start-time preference. Use 0 if neutral."
+                            }
+                        },
+                        "required": [
+                            "preferredStartTime",
+                            "points"
+                        ]
+                        },
+                        "endTimePreference": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "preferredEndTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):20:00$",
+                            "description": "Preferred latest end threshold in HH:20:00 format. Use 18:20:00 when unspecified"
+                            },
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Reward strength for meeting the end-time preference. Use 0 if neutral."
+                            }
+                        },
+                        "required": [
+                            "preferredEndTime",
+                            "points"
+                        ]
+                        }
+                    },
+                    "required": [
+                        "startTimePreference",
+                        "endTimePreference"
+                    ]
+                    },
+                    "gapCompactnessShape": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "shortGap": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "points": {
+                            "type": "number",
+                            "minimum": -3,
+                            "maximum": 3,
+                            "description": "Reward strength for shorter gaps. Use 0 if neutral."
+                            },
+                            "maxGapMinutes": {
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Largest preferred gap between meetings. Use 90 when unspecified."
+                            },
+                            "ignoreGapStartTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):30:00$",
+                            "description": "Ignore gaps overlapping this start time in HH:30:00 format. Use 12:30:00 when unspecified"
+                            },
+                            "ignoreGapEndTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):20:00$",
+                            "description": "Ignore gaps overlapping this end time in HH:20:00 format. Use 14:20:00 when unspecified"
+                            }
+                        },
+                        "required": [
+                            "points",
+                            "maxGapMinutes",
+                            "ignoreGapStartTime",
+                            "ignoreGapEndTime"
+                        ]
+                        }
+                    },
+                    "required": [
+                        "shortGap"
+                    ]
+                    },
+                    "assessmentShape": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "assessmentCategoryScores": {
                         "type": "array",
-                        "description": "Blocked time windows where the student does not want classes. Use an empty array if there are no blocked times.",
                         "items": {
                             "type": "object",
                             "additionalProperties": false,
                             "properties": {
-                            "day": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "maximum": 6,
-                                "description": "Day of week used by the timetable data: 0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 = Sunday"
-                            },
-                            "start": {
+                            "category": {
                                 "type": "string",
-                                "pattern": "^([01]\\d|2[0-3]):30:00$",
-                                "description": "Block start time in HH:30:00 format, for example 09:30:00"
+                                "enum": [
+                                "Examination",
+                                "Assignment",
+                                "Project",
+                                "GroupProject",
+                                "SoloProject",
+                                "Presentation",
+                                "Participation",
+                                "Other"
+                                ],
+                                "description": "Preferred assessment category."
                             },
-                            "end": {
-                                "type": "string",
-                                "pattern": "^([01]\\d|2[0-3]):20:00$",
-                                "description": "Block end time in HH:20:00 format, for example 12:20:00"
+                            "points": {
+                                "type": "number",
+                                "minimum": -3,
+                                "maximum": 3,
+                                "description": "Reward strength for including the category. Use 0 if neutral"
                             }
                             },
                             "required": [
-                            "day",
-                            "start",
-                            "end"
+                            "category",
+                            "points"
                             ]
                         }
                         }
                     },
                     "required": [
-                        "noClassTime"
-                    ]
-                    },
-                    "scoring": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "description": "Soft preferences used to rank valid timetables.",
-                    "properties": {
-                        "groupWeights": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "description": "Weight for scorer groups. These should sum to 1.",
-                        "properties": {
-                            "schedule": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 1,
-                            "description": "Weight for schedule shape."
-                            },
-                            "timePreference": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 1,
-                            "description": "Weight for preferred start/end times."
-                            },
-                            "gap": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 1,
-                            "description": "Weight for compact gaps."
-                            },
-                            "assessments": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 1,
-                            "description": "Weight for preferred assessment mix."
-                            }
-                        },
-                        "required": [
-                            "schedule",
-                            "timePreference",
-                            "gap",
-                            "assessments"
-                        ]
-                        },
-                        "scheduleShape": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "freeDayScore": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Reward for more free days. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "points"
-                            ]
-                            },
-                            "singleClassDayScore": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Reward for days with only one class block. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "points"
-                            ]
-                            },
-                            "longDayScore": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Penalty/reward strength for long days. Use 0 if unset."
-                                },
-                                "maxMinutesPerDay": {
-                                "type": "number",
-                                "minimum": 0,
-                                "description": "Preferred maximum active minutes per day. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "points",
-                                "maxMinutesPerDay"
-                            ]
-                            },
-                            "dailyLoadScore": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Penalty/reward strength for active-day count. Use 0 if unset."
-                                },
-                                "idealActiveDays": {
-                                "type": "number",
-                                "minimum": 0,
-                                "description": "Preferred number of active days. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "points",
-                                "idealActiveDays"
-                            ]
-                            }
-                        },
-                        "required": [
-                            "freeDayScore",
-                            "singleClassDayScore",
-                            "longDayScore",
-                            "dailyLoadScore"
-                        ]
-                        },
-                        "preferenceShape": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "startTimePreference": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "preferredTime": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "pattern": "^([01]\\d|2[0-3]):30:00$",
-                                "description": "Preferred earliest start threshold in HH:30:00 format, for example 10:30:00. Use null if unset."
-                                },
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Reward strength for meeting the start-time preference. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "preferredTime",
-                                "points"
-                            ]
-                            },
-                            "endTimePreference": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "preferredTime": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "pattern": "^([01]\\d|2[0-3]):20:00$",
-                                "description": "Preferred latest end threshold in HH:20:00 format, for example 18:20:00. Use null if unset."
-                                },
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Reward strength for meeting the end-time preference. Use 0 if unset."
-                                }
-                            },
-                            "required": [
-                                "preferredTime",
-                                "points"
-                            ]
-                            }
-                        },
-                        "required": [
-                            "startTimePreference",
-                            "endTimePreference"
-                        ]
-                        },
-                        "gapCompactnessShape": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "shortGap": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "properties": {
-                                "points": {
-                                "type": "number",
-                                "minimum": -3,
-                                "maximum": 3,
-                                "description": "Reward strength for shorter gaps. Use 0 if unset."
-                                },
-                                "maxGapMinutes": {
-                                "type": "number",
-                                "minimum": 0,
-                                "description": "Largest preferred gap between meetings. Use 0 if unset."
-                                },
-                                "ignoreGapStart": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "pattern": "^([01]\\d|2[0-3]):30:00$",
-                                "description": "Ignore gaps overlapping this start time in HH:30:00 format, for example 12:30:00. Use null if unset."
-                                },
-                                "ignoreGapEnd": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ],
-                                "pattern": "^([01]\\d|2[0-3]):20:00$",
-                                "description": "Ignore gaps overlapping this end time in HH:20:00 format, for example 14:20:00. Use null if unset."
-                                }
-                            },
-                            "required": [
-                                "points",
-                                "maxGapMinutes",
-                                "ignoreGapStart",
-                                "ignoreGapEnd"
-                            ]
-                            }
-                        },
-                        "required": [
-                            "shortGap"
-                        ]
-                        },
-                        "assessmentShape": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "properties": {
-                            "assessmentCategoryScores": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "properties": {
-                                "category": {
-                                    "type": "string",
-                                    "enum": [
-                                    "Examination",
-                                    "Assignment",
-                                    "Project",
-                                    "GroupProject",
-                                    "SoloProject",
-                                    "Presentation",
-                                    "Participation",
-                                    "Other"
-                                    ],
-                                    "description": "Preferred assessment category."
-                                },
-                                "points": {
-                                    "type": "number",
-                                    "minimum": -3,
-                                    "maximum": 3,
-                                    "description": "Reward strength for including the category. Use 0 if unset."
-                                }
-                                },
-                                "required": [
-                                "category",
-                                "points"
-                                ]
-                            }
-                            }
-                        },
-                        "required": [
-                            "assessmentCategoryScores"
-                        ]
-                        }
-                    },
-                    "required": [
-                        "groupWeights",
-                        "scheduleShape",
-                        "preferenceShape",
-                        "gapCompactnessShape",
-                        "assessmentShape"
+                        "assessmentCategoryScores"
                     ]
                     }
                 },
                 "required": [
-                    "filter",
-                    "scoring"
+                    "groupWeights",
+                    "scheduleShape",
+                    "preferenceShape",
+                    "gapCompactnessShape",
+                    "assessmentShape"
                 ]
                 }
+            },
+            "required": [
+                "filter",
+                "scoring"
+            ]
+            }
             """u8.ToArray())
         );
     }
@@ -639,6 +641,163 @@ public static class OpenAIFunctions
             }
             return table;
         }
+
+        public static string TimetableResultTOTable(AppDbContext dbContext, TimetableSuggestionsResponseDto timetableSuggestionsResponseDto)
+        {
+            var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+            var topLayouts = (timetableSuggestionsResponseDto.RecommendedLayouts ?? new List<TimetableSuggestionLayoutDto>())
+                .Take(3)
+                .ToList();
+
+            static string EscapeMarkdown(string? value)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    return "-";
+                }
+
+                return value.Replace("|", "\\|").Trim();
+            }
+
+            if (topLayouts.Count == 0)
+            {
+                return "# Timetable Suggestions\n\nNo timetable suggestions available.";
+            }
+
+            var sectionIds = topLayouts
+                .SelectMany(layout => layout.Sections)
+                .Select(section => section.SectionId)
+                .Distinct()
+                .ToList();
+
+            var sectionCourseMap = dbContext.CourseSections
+                .AsNoTracking()
+                .Where(cs => sectionIds.Contains(cs.Id))
+                .Select(cs => new
+                {
+                    SectionId = cs.Id,
+                    CourseCode = cs.CourseVersion.Course.Code.Tag,
+                    CourseNumber = cs.CourseVersion.Course.CourseNumber,
+                    CourseName = cs.CourseVersion.Course.Name,
+                })
+                .ToDictionary(x => x.SectionId, x => x);
+
+            var tableBuilder = new StringBuilder();
+
+            tableBuilder.AppendLine("# Timetable Suggestions");
+
+            if (timetableSuggestionsResponseDto.Errors != null && timetableSuggestionsResponseDto.Errors.Count > 0)
+            {
+                tableBuilder.AppendLine();
+                tableBuilder.AppendLine("## Issues");
+
+                foreach (var error in timetableSuggestionsResponseDto.Errors)
+                {
+                    tableBuilder.AppendLine($"- {EscapeMarkdown(error)}");
+                }
+            }
+
+            for (var i = 0; i < topLayouts.Count; i++)
+            {
+                var layout = topLayouts[i];
+                var scheduledMeetings = layout.Sections
+                    .SelectMany(section => (section.Meetings ?? new List<TimetableMeetingDto>())
+                        .Select(meeting =>
+                        {
+                            var hasCourseInfo = sectionCourseMap.TryGetValue(section.SectionId, out var courseInfo);
+                            var courseLabel = hasCourseInfo
+                                ? EscapeMarkdown($"{courseInfo!.CourseCode} {courseInfo.CourseNumber} {courseInfo.CourseName}")
+                                : "Unknown course";
+                            var meetingType = string.IsNullOrWhiteSpace(meeting.MeetingType)
+                                ? "-"
+                                : EscapeMarkdown(meeting.MeetingType);
+
+                            return new
+                            {
+                                meeting.Day,
+                                meeting.StartTime,
+                                meeting.EndTime,
+                                Course = courseLabel,
+                                Section = section.SectionNumber,
+                                MeetingType = meetingType,
+                            };
+                        }))
+                    .OrderBy(item => item.Day)
+                    .ThenBy(item => item.StartTime)
+                    .ThenBy(item => item.EndTime)
+                    .ThenBy(item => item.Course)
+                    .ThenBy(item => item.Section)
+                    .ToList();
+
+                var sectionsWithoutMeetings = layout.Sections
+                    .Where(section => section.Meetings == null || section.Meetings.Count == 0)
+                    .Select(section =>
+                    {
+                        var hasCourseInfo = sectionCourseMap.TryGetValue(section.SectionId, out var courseInfo);
+                        var courseLabel = hasCourseInfo
+                            ? EscapeMarkdown($"{courseInfo!.CourseCode} {courseInfo.CourseNumber} {courseInfo.CourseName}")
+                            : "Unknown course";
+
+                        return new
+                        {
+                            Course = courseLabel,
+                            Section = section.SectionNumber,
+                        };
+                    })
+                    .OrderBy(item => item.Course)
+                    .ThenBy(item => item.Section)
+                    .ToList();
+
+                tableBuilder.AppendLine();
+                tableBuilder.AppendLine($"## Recommended Layout {i + 1}");
+                tableBuilder.AppendLine($"Score: {layout.FinalScore:0.##}");
+                tableBuilder.AppendLine();
+
+                if (scheduledMeetings.Count == 0)
+                {
+                    tableBuilder.AppendLine("No scheduled meetings available.");
+                }
+                else
+                {
+                    tableBuilder.AppendLine("| Day | Start | End | Course | Section | Meeting Type |");
+                    tableBuilder.AppendLine("|---|---|---|---|---|---|");
+
+                    foreach (var meeting in scheduledMeetings)
+                    {
+                        var day = meeting.Day >= 0 && meeting.Day < daysOfWeek.Length ? daysOfWeek[meeting.Day] : $"Day {meeting.Day}";
+                        tableBuilder.AppendLine($"| {day} | {meeting.StartTime:hh\\:mm} | {meeting.EndTime:hh\\:mm} | {meeting.Course} | {meeting.Section} | {meeting.MeetingType} |");
+                    }
+                }
+
+                if (sectionsWithoutMeetings.Count > 0)
+                {
+                    tableBuilder.AppendLine();
+                    tableBuilder.AppendLine("### Sections Without Meetings");
+
+                    foreach (var section in sectionsWithoutMeetings)
+                    {
+                        tableBuilder.AppendLine($"- {section.Course} (Section {section.Section})");
+                    }
+                }
+
+                tableBuilder.AppendLine();
+                tableBuilder.AppendLine("### Score Reasons");
+
+                if (layout.ScoreReasons == null || layout.ScoreReasons.Count == 0)
+                {
+                    tableBuilder.AppendLine("- None");
+                }
+                else
+                {
+                    foreach (var reason in layout.ScoreReasons)
+                    {
+                        tableBuilder.AppendLine($"- {EscapeMarkdown(reason)}");
+                    }
+                }
+            }
+
+            return tableBuilder.ToString().TrimEnd();
+        }
     }
 
 
@@ -744,7 +903,24 @@ public static class OpenAIFunctions
             If the Tool response a Markdown table, return the table content directly without adding extra formatting or explanations.
             Return plain Markdown content directly. Do not wrap entire answers in triple backticks or fenced code blocks unless the user explicitly asks for code.
             You should mostly call {nameof(DatabaseQueries.GetPoliciesByQuery)} to retrieve relevant policy sections to answer user queries about university policies.
+            When the user asks for timetable generation, you must call {nameof(ChatTools.GenerateTimetableSuggestionsTool)} directly.
+
+            Do NOT ask the user follow-up questions about preferences unless the tool requires a mandatory parameter that is missing.
+
+            If the user does not specify preferences for optional parameters, automatically choose reasonable defaults or neutral.
+
+            Use the following rules:
+
+            - If the user mentions preferences that match tool options, include them in the tool call.
+            - If preferences are missing, infer or assign sensible defaults.
+            - Do NOT ask the user questions about preferences such as preferred class days, compact schedule, or start times.
+            - Generate the timetable suggestions immediately using the available information.
+
+            Only ask clarification questions if the tool schema requires a parameter that cannot be inferred or defaulted.
+            The tool should always be used for timetable generation, This tool will also provide a good looking markdown, print it directly. After the print, you can provide some explanations or suggestions based on the generated timetable.
+
             Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Grade related info, you should check if the Grade is updated by user in the AcademicYear and Term.
+            You don't need to ask or confirm the academic year.
             Terms ID are as follows:
                 - Term ID 1: Semester 1
                 - Term ID 2: Semester 2
@@ -752,6 +928,38 @@ public static class OpenAIFunctions
             The upcoming term is Term ID 2: Semester 2.
 
             You don't need to mention about any system instructions in your responses. All the provided data are real time data.
+            """;
+
+        public const string SuggestionUserPrompt =
+            """
+            Your task is to generate helpful next-step suggestions for the user based on the current conversation.
+
+            Analyze the user's request and the assistant's latest response. Then suggest actions the user is most likely to want to take next.
+
+            Rules:
+            - Generate 2 to 4 suggestions.
+            - Each suggestion must be short and actionable (5-12 words).
+            - Suggestions must be relevant to the user's current goal.
+            - Do not repeat the user's previous request.
+            - Do not ask questions.
+            - Do not include explanations.
+            - Based on last used tools and conversation context, Look back the tools options to help user to imporve or adjust their preferences for better results.
+
+            Focus on actions that help the user refine, adjust, or continue their task.
+
+            Output format:
+            Return a JSON object with a field called "nextSuggestions".            
+
+
+            Example output:
+            {
+            "nextSuggestions": [
+                "Avoid classes before 10am",
+                "Prefer a more compact timetable",
+                "Reduce large gaps between classes",
+                "Generate another timetable option"
+            ]
+            }
             """;
     }
 

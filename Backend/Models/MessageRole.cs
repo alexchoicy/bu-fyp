@@ -5,6 +5,8 @@ public enum MessageRole
     User,
     Assistant,
     System,
-    Tool
+    Tool,
+    Timetable_JSON_REQUEST,
+    Suggestions
 }
 
