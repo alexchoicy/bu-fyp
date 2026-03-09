@@ -48,7 +48,7 @@ public class OpenAIProvider : IAIProvider
         //     Transport = new HttpClientPipelineTransport(httpClient)
         // };
 
-        _deploymentName = "gpt-5-nano";
+        _deploymentName = "gpt-5.3-chat";
         var options = new AzureOpenAIClientOptions()
         {
             Transport = new HttpClientPipelineTransport(httpClient),
@@ -532,7 +532,7 @@ public class OpenAIProvider : IAIProvider
                                         }
                                     case nameof(TimetableService.GetSuggestionsTimetableAsync):
                                         {
-                                            if (timetableGenerationTime >= 1)
+                                            if (timetableGenerationTime >= 2)
                                             {
                                                 messages.Add(
                                                     new ToolChatMessage(
@@ -662,7 +662,7 @@ public class OpenAIProvider : IAIProvider
 
         List<ChatMessage> messages = new List<ChatMessage>
             {
-                new SystemChatMessage(OpenAIFunctions.SystemPrompts.SuggestionUserPrompt),
+                new SystemChatMessage($"{OpenAIFunctions.SystemPrompts.ChatAssistant} ${OpenAIFunctions.SystemPrompts.SuggestionUserPrompt}"),
             };
 
         foreach (var msg in chatHistory)

@@ -917,7 +917,7 @@ public static class OpenAIFunctions
             - Generate the timetable suggestions immediately using the available information.
 
             Only ask clarification questions if the tool schema requires a parameter that cannot be inferred or defaulted.
-            The tool should always be used for timetable generation, This tool will also provide a good looking markdown, print it directly. After the print, you can provide some explanations or suggestions based on the generated timetable.
+            The tool should always be used for timetable generation, This tool will also provide a good looking markdown, print it directly and after the print, you can provide some explanations or suggestions based on the generated timetable, and the options you applied.
 
             Today is 2026-01-01. The latest Grade is Released. If the user asks about items required Grade related info, you should check if the Grade is updated by user in the AcademicYear and Term.
             You don't need to ask or confirm the academic year.
@@ -932,7 +932,7 @@ public static class OpenAIFunctions
 
         public const string SuggestionUserPrompt =
             """
-            Your task is to generate helpful next-step suggestions for the user based on the current conversation.
+            Right now your task is to generate helpful next-step suggestions for the user based on the current conversation.
 
             Analyze the user's request and the assistant's latest response. Then suggest actions the user is most likely to want to take next.
 
