@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import { ArrowUp, LoaderCircle } from "lucide-vue-next";
 import type { components } from "~/API/schema";
+import { base64UrlEncodeString } from "~/lib/base64utils";
 
 type Message = components["schemas"]["MessageResponseDto"]
+type MessageRelatedData = components["schemas"]["MessageRelatedDataResponseDto"]
+type TimetableGenerationRequest = components["schemas"]["TimetableGenerationRequestDto"]
+type EncodedGenerationState = {
+  generationRequest?: TimetableGenerationRequest;
+  currentStep?: "form" | "results";
+}
+
+type ChatMessage = Message & {
+  nextSuggestions?: string[];
+  timetable_tool?: TimetableGenerationRequest[];
+}
 
 enum Roles {
   User,
@@ -19,7 +31,7 @@ const input = defineModel<string>();
 
 //TODO right now i don't do any history things first, each time open a new chat
 const isNewChat = ref(true);
-const messages = ref<Message[]>([]);
+const messages = ref<ChatMessage[]>([]);
 const thisChat = ref<string>("");
 const isSending = ref(false);
 const messageViewport = ref<HTMLElement | null>(null)
@@ -42,6 +54,76 @@ const scrollToBottom = async (behavior: ScrollBehavior = "smooth") => {
 
 const messagePollingInterval = 1000;
 
+const clearNextSuggestions = () => {
+  messages.value = messages.value.map((message) => {
+    if (message.role !== Roles.Assistant || !message.nextSuggestions?.length) {
+      return message;
+    }
+
+    return {
+      ...message,
+      nextSuggestions: [],
+    };
+  });
+}
+
+const updateMessage = (messageId: string, updater: (message: ChatMessage) => ChatMessage) => {
+  const index = messages.value.findIndex((message) => message.id === messageId);
+
+  if (index === -1) {
+    return;
+  }
+
+  const currentMessage = messages.value[index];
+
+  if (!currentMessage) {
+    return;
+  }
+
+  messages.value[index] = updater(currentMessage);
+}
+
+const fetchRelatedData = async (messageId: string) => {
+  try {
+    const related = await useNuxtApp().$api<MessageRelatedData>(
+      `chat/${thisChat.value}/result/${messageId}/related`,
+      {
+        method: "GET",
+      }
+    );
+
+    updateMessage(messageId, (message) => ({
+      ...message,
+      nextSuggestions: related.nextSuggestions ?? [],
+      timetable_tool: related.timetable_tool ?? [],
+    }));
+  } catch (error) {
+    console.error("Error fetching related message data:", error);
+  }
+}
+
+const formatToolPayload = (payload: TimetableGenerationRequest) => {
+  return JSON.stringify(payload, null, 2);
+}
+
+const openTimetableGenerator = (payload: TimetableGenerationRequest) => {
+  const encodedState = base64UrlEncodeString(JSON.stringify({
+    generationRequest: payload,
+    currentStep: "results",
+  } satisfies EncodedGenerationState));
+
+  navigateTo({
+    path: "/timetable/generation",
+    query: {
+      tg: encodedState,
+    },
+  }, {
+    open: {
+      target: "_blank",
+    },
+  });
+}
+
 const canSend = computed(() => {
   const value = input.value?.trim() ?? "";
   return value.length > 0 && lastMessageId.value === "" && !isSending.value;
@@ -59,28 +141,26 @@ const messagePoller = async () => {
     );
 
     if (result.status === MessageStatus.Complete) {
-      const index = messages.value.findIndex(
-        (msg) => msg.id === lastMessageId.value
-      );
-      if (index !== -1) {
-        messages.value[index] = result;
-      }
+      const completedMessageId = lastMessageId.value;
 
+      updateMessage(completedMessageId, (message) => ({
+        ...message,
+        ...result,
+      }));
+
+      await fetchRelatedData(completedMessageId);
       lastMessageId.value = "";
       scrollToBottom();
     } else if (result.status === MessageStatus.Failed) {
-      const index = messages.value.findIndex(
-        (msg) => msg.id === lastMessageId.value
-      );
-      if (index !== -1) {
-        messages.value[index] = {
-          ...result,
-          content:
-            result.content && result.content.trim().length > 0
-              ? result.content
-              : "Sorry, I couldn't generate a response. Please try again.",
-        };
-      }
+      updateMessage(lastMessageId.value, (message) => ({
+        ...message,
+        ...result,
+        content:
+          result.content && result.content.trim().length > 0
+            ? result.content
+            : "Sorry, I couldn't generate a response. Please try again.",
+      }));
+
       lastMessageId.value = "";
     } else {
       // Still processing, will check again later
@@ -91,8 +171,8 @@ const messagePoller = async () => {
   }
 };
 
-const onSend = async () => {
-  const message = input.value?.trim() ?? "";
+const sendMessage = async (rawMessage: string) => {
+  const message = rawMessage.trim() ?? "";
 
   if (message.length === 0) {
     return;
@@ -107,6 +187,7 @@ const onSend = async () => {
   }
 
   isSending.value = true;
+  clearNextSuggestions();
 
   messages.value.push({
     role: Roles.User,
@@ -144,6 +225,8 @@ const onSend = async () => {
       content: "",
       status: MessageStatus.Pending,
       id: lastMessageId.value,
+      nextSuggestions: [],
+      timetable_tool: [],
     });
 
 
@@ -156,23 +239,35 @@ const onSend = async () => {
     }, messagePollingInterval);
   } catch (error) {
     console.error("Failed to send message:", error);
-    const index = messages.value.findIndex(
-      (msg) => msg.id === lastMessageId.value
-    );
-    if (index !== -1) {
-      messages.value[index] = {
-        ...messages.value[index],
+    updateMessage(lastMessageId.value, (message) => ({
+      ...message,
+      content:
+        "Sorry, I couldn't send your message. Please try again.",
+      status: MessageStatus.Failed,
+    }));
+
+    if (lastMessageId.value === "") {
+      messages.value.push({
+        role: Roles.Assistant,
         content:
           "Sorry, I couldn't send your message. Please try again.",
         status: MessageStatus.Failed,
-      };
+        id: crypto.randomUUID(),
+        nextSuggestions: [],
+        timetable_tool: [],
+      });
     }
+
     scrollToBottom("smooth");
   } finally {
     isSending.value = false;
   }
 
 };
+
+const onSend = async () => {
+  await sendMessage(input.value ?? "");
+}
 </script>
 
 <template>
@@ -200,7 +295,29 @@ const onSend = async () => {
           </template>
           <template v-else>
             <div class="inline-block p-2 rounded-lg">
+              <Accordion v-if="message.timetable_tool?.length" type="single" collapsible class="mb-3 w-full space-y-2">
+                <AccordionItem v-for="(toolPayload, index) in message.timetable_tool" :key="`${message.id}-tool-${index}`"
+                  :value="`${message.id}-tool-${index}`">
+                  <AccordionTrigger>
+                    Timetable Generation v{{ index + 1 }}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div class="space-y-3 rounded-md border bg-muted/30 p-3">
+                      <Button variant="outline" size="sm" @click="openTimetableGenerator(toolPayload)">
+                        Open timetable generator
+                      </Button>
+                      <pre class="overflow-x-auto rounded-md bg-background p-3 text-xs">{{ formatToolPayload(toolPayload) }}</pre>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               <UiChatMessageContent :content="message.content" />
+              <div v-if="message.nextSuggestions?.length" class="mt-4 flex flex-wrap gap-2">
+                <Button v-for="suggestion in message.nextSuggestions" :key="`${message.id}-${suggestion}`" variant="outline"
+                  size="sm" :disabled="isSending || lastMessageId !== ''" @click="sendMessage(suggestion)">
+                  {{ suggestion }}
+                </Button>
+              </div>
             </div>
           </template>
         </div>

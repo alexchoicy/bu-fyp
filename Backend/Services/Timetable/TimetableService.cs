@@ -656,10 +656,10 @@ public class TimetableService : ITimetableService
             .FirstOrDefault()
             ?? layouts.OrderBy(layout => layout.FinalScore).FirstOrDefault();
 
-        Console.WriteLine("----");
-        DebugPrintLayouts(layouts);
-        Console.WriteLine("----");
-        Console.WriteLine($"Errors: {string.Join("; ", error)}");
+        // Console.WriteLine("----");
+        // DebugPrintLayouts(layouts);
+        // Console.WriteLine("----");
+        // Console.WriteLine($"Errors: {string.Join("; ", error)}");
         Console.WriteLine($"Total Valid Layouts Found: {layouts.Count}");
 
         Console.WriteLine("Finished Generating Timetable Suggestions");

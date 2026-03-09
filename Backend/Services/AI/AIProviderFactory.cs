@@ -21,7 +21,7 @@ public interface IAIProvider
     Task<Vector> CreateCourseDomainTagEmbeddingAsync(string courseTitle, string aimsAndObjectives, string courseContent);
     Task<Vector> CreateCourseSkillsTagEmbeddingAsync(string aimsAndObjectives, List<CILOs> cilos, string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
     Task<Vector> CreateCourseContentTypesTagEmbeddingAsync(string courseContent, List<TLAs> tlas, List<AssessmentMethod> assessmentMethods);
-    Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory);
+    Task<List<ChatMessage>> GenerateChatResponseAsync(List<Message> chatHistory, string userId, Guid pendingMessageId);
 }
 
 

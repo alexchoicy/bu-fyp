@@ -2,13 +2,14 @@
 import { Calendar, ChevronLeft, Loader2 } from 'lucide-vue-next';
 import type { components } from '~/API/schema';
 import GenerationPreferencesForm from '~/components/ui/timetable/GenerationPreferencesForm.vue';
-import { base64UrlEncodeString } from '~/lib/base64utils';
+import { base64UrlDecodeString, base64UrlEncodeString } from '~/lib/base64utils';
 
 type TimetableGenerationRequest = components["schemas"]["TimetableGenerationRequestDto"];
 type TimetableSuggestionsResponse = components["schemas"]["TimetableSuggestionsResponseDto"];
 type TimetableResponse = components["schemas"]["TimetableResponseDto"];
+type Step = 'form' | 'results';
 
-const generationRequest = reactive<TimetableGenerationRequest>({
+const createDefaultGenerationRequest = (): TimetableGenerationRequest => ({
     scoring: {
         baseScore: 0,
         groupWeights: {
@@ -64,12 +65,82 @@ const generationRequest = reactive<TimetableGenerationRequest>({
         },
     },
     filter: {
-        noClassTime: [
-        ],
+        noClassTime: [],
     },
 });
 
-type Step = 'form' | 'results';
+const mergeGenerationRequest = (value?: TimetableGenerationRequest | null): TimetableGenerationRequest => {
+    const defaults = createDefaultGenerationRequest();
+
+    return {
+        ...defaults,
+        ...value,
+        scoring: {
+            ...defaults.scoring,
+            ...value?.scoring,
+            groupWeights: {
+                ...defaults.scoring.groupWeights,
+                ...value?.scoring?.groupWeights,
+            },
+            scheduleShape: {
+                ...defaults.scoring.scheduleShape,
+                ...value?.scoring?.scheduleShape,
+                freeDayScore: {
+                    ...defaults.scoring.scheduleShape.freeDayScore,
+                    ...value?.scoring?.scheduleShape?.freeDayScore,
+                },
+                singleClassDayScore: {
+                    ...defaults.scoring.scheduleShape.singleClassDayScore,
+                    ...value?.scoring?.scheduleShape?.singleClassDayScore,
+                },
+                longDayScore: {
+                    ...defaults.scoring.scheduleShape.longDayScore,
+                    ...value?.scoring?.scheduleShape?.longDayScore,
+                },
+                dailyLoadScore: {
+                    ...defaults.scoring.scheduleShape.dailyLoadScore,
+                    ...value?.scoring?.scheduleShape?.dailyLoadScore,
+                },
+            },
+            preferenceShape: {
+                ...defaults.scoring.preferenceShape,
+                ...value?.scoring?.preferenceShape,
+                startTimePreference: {
+                    ...defaults.scoring.preferenceShape.startTimePreference,
+                    ...value?.scoring?.preferenceShape?.startTimePreference,
+                },
+                endTimePreference: {
+                    ...defaults.scoring.preferenceShape.endTimePreference,
+                    ...value?.scoring?.preferenceShape?.endTimePreference,
+                },
+            },
+            gapCompactnessShape: {
+                ...defaults.scoring.gapCompactnessShape,
+                ...value?.scoring?.gapCompactnessShape,
+                shortGap: {
+                    ...defaults.scoring.gapCompactnessShape.shortGap,
+                    ...value?.scoring?.gapCompactnessShape?.shortGap,
+                },
+            },
+            assessmentShape: {
+                ...defaults.scoring.assessmentShape,
+                ...value?.scoring?.assessmentShape,
+                assessmentCategoryScores: value?.scoring?.assessmentShape?.assessmentCategoryScores
+                    ? structuredClone(value.scoring.assessmentShape.assessmentCategoryScores)
+                    : structuredClone(defaults.scoring.assessmentShape.assessmentCategoryScores),
+            },
+        },
+        filter: {
+            ...defaults.filter,
+            ...value?.filter,
+            noClassTime: value?.filter?.noClassTime
+                ? structuredClone(value.filter.noClassTime)
+                : structuredClone(defaults.filter?.noClassTime ?? []),
+        },
+    };
+};
+
+const generationRequest = reactive<TimetableGenerationRequest>(createDefaultGenerationRequest());
 
 const currentStep = ref<Step>('form');
 const isSubmitting = ref(false);
@@ -79,6 +150,23 @@ const apiErrors = ref<string[]>([]);
 const isLoading = ref(false);
 const requestError = ref<string | null>(null);
 const suggestions = ref<TimetableSuggestionsResponse>({ recommendedLayouts: [] });
+const route = useRoute();
+const router = useRouter();
+
+type EncodedGenerationState = {
+    generationRequest?: TimetableGenerationRequest;
+    currentStep?: Step;
+};
+
+const generationStateQueryKey = 'tg';
+const isRestoringGenerationState = ref(false);
+const lastSyncedGenerationState = ref<string | null>(null);
+
+const applyGenerationRequest = (value?: TimetableGenerationRequest | null) => {
+    Object.assign(generationRequest, mergeGenerationRequest(value));
+};
+
+const getSingleQueryValue = (value: string | (string | null)[] | null | undefined) => Array.isArray(value) ? value[0] ?? undefined : value ?? undefined;
 
 const submitGenerationRequest = async () => {
     if (isSubmitting.value) return;
@@ -113,6 +201,73 @@ const submitGenerationRequest = async () => {
         isSubmitting.value = false;
     }
 };
+
+const restoreGenerationStateFromQuery = async (encodedState: string) => {
+    try {
+        isRestoringGenerationState.value = true;
+
+        const decodedState = JSON.parse(base64UrlDecodeString(encodedState)) as EncodedGenerationState;
+
+        applyGenerationRequest(decodedState.generationRequest);
+        currentStep.value = decodedState.currentStep === 'results' ? 'results' : 'form';
+        apiErrors.value = [];
+        suggestions.value = { recommendedLayouts: [] };
+        requestError.value = null;
+        lastSyncedGenerationState.value = encodedState;
+    }
+    catch (error) {
+        console.error('Failed to decode timetable generation state from URL:', error);
+        return;
+    }
+    finally {
+        await nextTick();
+        isRestoringGenerationState.value = false;
+    }
+
+    if (currentStep.value === 'results') {
+        await submitGenerationRequest();
+    }
+};
+
+watch(
+    () => getSingleQueryValue(route.query[generationStateQueryKey]),
+    (encodedState) => {
+        if (!encodedState || encodedState === lastSyncedGenerationState.value) {
+            return;
+        }
+
+        restoreGenerationStateFromQuery(encodedState);
+    },
+    { immediate: true },
+);
+
+watch(
+    [generationRequest, currentStep],
+    async () => {
+        if (isRestoringGenerationState.value) {
+            return;
+        }
+
+        const encodedState = base64UrlEncodeString(JSON.stringify({
+            generationRequest: structuredClone(toRaw(generationRequest)),
+            currentStep: currentStep.value,
+        } satisfies EncodedGenerationState));
+
+        if (encodedState === lastSyncedGenerationState.value) {
+            return;
+        }
+
+        lastSyncedGenerationState.value = encodedState;
+
+        await router.replace({
+            query: {
+                ...route.query,
+                [generationStateQueryKey]: encodedState,
+            },
+        });
+    },
+    { deep: true },
+);
 
 interface BlockTimeItem {
     id: string;
