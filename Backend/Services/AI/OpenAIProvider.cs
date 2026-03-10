@@ -304,11 +304,14 @@ public class OpenAIProvider : IAIProvider
                 {
                     messages.Add(new AssistantChatMessage(msg.Content));
                 }
-                else if (msg.Role == MessageRole.Timetable_JSON_REQUEST)
-                {
-                    messages.Add(new SystemChatMessage($"Last used Timetable generated Request Json {msg.Content}"));
-                }
             }
+
+            var lastTimetableRequestMessage = chatHistory.LastOrDefault(m => m.Role == MessageRole.Timetable_JSON_REQUEST);
+            if (lastTimetableRequestMessage != null)
+            {
+                messages.Add(new SystemChatMessage(OpenAIFunctions.ChatHelper.BuildPriorTimetableRequestContext(lastTimetableRequestMessage.Content)));
+            }
+
 
             ChatCompletionOptions options = new ChatCompletionOptions()
             {
@@ -662,7 +665,7 @@ public class OpenAIProvider : IAIProvider
 
         List<ChatMessage> messages = new List<ChatMessage>
             {
-                new SystemChatMessage($"{OpenAIFunctions.SystemPrompts.ChatAssistant} ${OpenAIFunctions.SystemPrompts.SuggestionUserPrompt}"),
+             new SystemChatMessage($"{OpenAIFunctions.SystemPrompts.ChatAssistant}\n\n{OpenAIFunctions.SystemPrompts.SuggestionUserPrompt}"),
             };
 
         foreach (var msg in chatHistory)
@@ -675,10 +678,12 @@ public class OpenAIProvider : IAIProvider
             {
                 messages.Add(new AssistantChatMessage(msg.Content));
             }
-            else if (msg.Role == MessageRole.Timetable_JSON_REQUEST)
-            {
-                messages.Add(new SystemChatMessage($"Last used Timetable generated Request Json {msg.Content}"));
-            }
+        }
+
+        var lastTimetableRequestMessage = chatHistory.LastOrDefault(m => m.Role == MessageRole.Timetable_JSON_REQUEST);
+        if (lastTimetableRequestMessage != null)
+        {
+            messages.Add(new SystemChatMessage(OpenAIFunctions.ChatHelper.BuildPriorTimetableRequestContext(lastTimetableRequestMessage.Content)));
         }
 
         ChatResponseFormat suggestionResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
