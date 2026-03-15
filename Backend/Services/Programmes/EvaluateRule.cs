@@ -319,6 +319,7 @@ public class EvaluateRule : IEvaluateRule
                 var sc = matches.First();
                 usedStudentCourseIds.Add(sc.CourseId);
 
+                status.CourseID = sc.CourseId;
                 status.IsCompleted = true;
                 status.CreditsUsed = sc.Course.Credit;
 
@@ -361,6 +362,7 @@ public class EvaluateRule : IEvaluateRule
                 var sc = matches.First();
                 usedStudentCourseIds.Add(sc.CourseId);
 
+                status.CourseID = sc.CourseId;
                 status.IsCompleted = true;
                 status.CreditsUsed = sc.Course.Credit;
 
@@ -426,6 +428,7 @@ public class EvaluateRule : IEvaluateRule
                 var sc = matches.First();
                 usedStudentCourseIds.Add(sc.CourseId);
 
+                status.CourseID = sc.CourseId;
                 status.IsCompleted = true;
                 status.CreditsUsed = sc.Course.Credit;
 
