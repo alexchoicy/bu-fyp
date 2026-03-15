@@ -18,9 +18,32 @@ const courses = computed(() => {
     return props.categoryGroup?.groupCourses?.filter((gc) => gc.course !== null)
 })
 
-const FindStudyById = (courseId: string) => {
-    return props.userStudies?.find((study) => study.courseId === courseId)
+const normalizeId = (value: number | string | null | undefined) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
 }
+
+const findStudyById = (courseId: number | string | null | undefined) => {
+    const normalizedCourseId = normalizeId(courseId)
+
+    if (normalizedCourseId === null) {
+        return null
+    }
+
+    return props.userStudies?.find((study) => normalizeId(study.courseId) === normalizedCourseId) ?? null
+}
+
+const freeElectiveStudies = computed(() => {
+    const usedCourseIds = new Set(
+        (props.userProgrammeDetail?.usedCourseIds ?? [])
+            .map(id => normalizeId(id))
+            .filter((id): id is number => id !== null)
+    )
+
+    return [...usedCourseIds]
+        .map(id => findStudyById(id))
+        .filter((study): study is NonNullable<typeof study> => study !== null)
+})
 
 </script>
 
@@ -47,25 +70,25 @@ const FindStudyById = (courseId: string) => {
                 <div className="grid gap-2 sm:grid-cols-2">
                     <UiProgrammeCourseCard v-for="course in courses" :key="course?.course?.courseId"
                         :course-info="course.course"
-                        :study-history="userStudies?.find(us => us.courseId === course?.course?.courseId) || null"
+                        :study-history="findStudyById(course?.course?.courseId)"
                         :user-programme-item="userProgrammeDetail?.items?.find((item) => course.course?.courseId === item.courseID)" />
                 </div>
             </div>
             <div v-else-if="userProgrammeDetail?.ruleNode.type === 'free_elective'" class="space-y-2">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Courses has Finished</p>
                 <div class="flex flex-col gap-2">
-                    <UiProgrammeCourseCard v-for="ids in userProgrammeDetail.usedCourseIds" :key="ids" :course-info="{
-                        courseId: ids,
-                        name: FindStudyById(ids)?.courseName || 'Unknown Course',
-                        codeTag: FindStudyById(ids)?.codeTag || '',
-                        courseNumber: FindStudyById(ids)?.courseNumber || '',
-                        credit: FindStudyById(ids)?.credit || 0
-                    }" :study-history="FindStudyById(ids)" :user-programme-item="{
+                    <UiProgrammeCourseCard v-for="study in freeElectiveStudies" :key="study.courseId" :course-info="{
+                        courseId: study.courseId,
+                        name: study.courseName || 'Unknown Course',
+                        codeTag: study.codeTag || '',
+                        courseNumber: study.courseNumber || '',
+                        credit: study.credit || 0
+                    }" :study-history="study" :user-programme-item="{
                         groupCourseID: 0,
-                        courseID: ids,
+                        courseID: study.courseId,
                         codeID: null,
                         isCompleted: true,
-                        creditsUsed: FindStudyById(ids)?.credit || 0,
+                        creditsUsed: study.credit || 0,
                     }" />
                 </div>
             </div>

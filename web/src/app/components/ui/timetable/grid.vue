@@ -82,6 +82,13 @@ const getCourseContext = (meetingID: number) => {
     return null;
 };
 
+const getCourseLabel = (meetingID: number) => {
+    const course = getCourseContext(meetingID)?.course;
+    if (!course) return '';
+
+    return `${course.courseCode ?? ''}`.trim();
+};
+
 </script>
 
 <template>
@@ -123,8 +130,11 @@ const getCourseContext = (meetingID: number) => {
                                 @click="emit('removeSection', getCourseContext(meeting.id)?.section.sectionId!)"
                                 class="absolute left-1 right-1 bg-primary/20 border border-primary rounded p-1 text-xs text-primary overflow-hidden hover:bg-primary/30 cursor-pointer">
 
-                                <div>{{ getCourseContext(meeting.id)?.course.courseName }}</div>
-                                <div>{{ meeting.startTime }} - {{ meeting.endTime }}</div>
+                                <div class="text-[10px] font-semibold leading-tight text-primary/80">
+                                    {{ getCourseLabel(meeting.id) }}
+                                </div>
+                                <div class="leading-tight">{{ getCourseContext(meeting.id)?.course.courseName }}</div>
+                                <div class="leading-tight">{{ meeting.startTime }} - {{ meeting.endTime }}</div>
                             </div>
 
                             <div v-for="blocktime in blockTimes[dayIndex - 1] || []" :key="blocktime.id"
