@@ -591,7 +591,7 @@ public class OpenAIProvider : IAIProvider
                                                     new ToolChatMessage(
                                                         toolCall.Id,
                                                         ChatMessageContentPart.CreateTextPart(
-                                                            OpenAIFunctions.ChatHelper.TimetableResultTOTable(_dbContext, toolResult)
+                                                            OpenAIFunctions.ChatHelper.TimetableResultTOTable(_dbContext, toolResult, userId)
                                                         )
                                                     )
                                                 );

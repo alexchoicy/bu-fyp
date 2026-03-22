@@ -5,10 +5,14 @@ import type { components } from '~/API/schema'
 type AcademicProgressDto = components['schemas']['AcademicProgressDto']
 type CurrentFactsResponseDto = components['schemas']['CurrentFactsResponseDto']
 type UserCourseDto = components['schemas']['UserCourseDto']
+type CategoryCompletionStatus = components['schemas']['CategoryCompletionStatus']
+type UserProgrammeDetailDto = components['schemas']['UserProgrammeDetailDto']
 
 const { data: dashboardData } = useAPI<AcademicProgressDto>('/me/academic-progress')
 const { data: facts } = useAPI<CurrentFactsResponseDto>('/facts')
 const { data: studentCourses } = useAPI<UserCourseDto[]>('/me/courses')
+const { data: categoryProgress } = useAPI<CategoryCompletionStatus[]>('/me/check')
+const { data: userProgramme } = useAPI<UserProgrammeDetailDto>('/me/programme')
 const { user } = useAuth()
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -136,7 +140,7 @@ const currentTermLabel = computed(() => {
       </Card>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
@@ -161,6 +165,51 @@ const currentTermLabel = computed(() => {
         <CardContent>
           <ClientOnly>
             <UiDashboardStrengthChart :courses="studentCourses ?? []" />
+          </ClientOnly>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            Planned vs actual credits
+          </CardTitle>
+          <CardDescription>Compare planned term credits against completed and enrolled credits</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClientOnly>
+            <UiDashboardPlannedActualCredits />
+          </ClientOnly>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            Assessment mix
+          </CardTitle>
+          <CardDescription>Assessment weighting exposure and weighted GPA performance by category across your full study timeline</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClientOnly>
+            <UiDashboardAssessmentMix />
+          </ClientOnly>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            Category progress
+          </CardTitle>
+          <CardDescription>Credits completed versus required credits by programme category</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClientOnly>
+            <UiDashboardCategoryProgress
+              :programme-categories="userProgramme?.categories ?? []"
+              :category-progress="categoryProgress ?? []"
+            />
           </ClientOnly>
         </CardContent>
       </Card>

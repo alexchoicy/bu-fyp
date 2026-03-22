@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,24 +15,14 @@ namespace Backend.Services.Timetable
             {
                 return true;
             }
+            var blockedTimes = filter.NoClassTime ?? new List<TimetableNoClassTimeDto>();
 
-
-            if (filter.EarliestStart.HasValue && meetings.Any(meeting => meeting.StartTime < filter.EarliestStart))
-            {
-                return false;
-            }
-
-            if (filter.LatestEnd.HasValue && meetings.Any(meeting => meeting.EndTime > filter.LatestEnd))
-            {
-                return false;
-            }
-
-            if (filter.NoClassTime.Count == 0)
+            if (blockedTimes.Count == 0)
             {
                 return true;
             }
 
-            foreach (var blocked in filter.NoClassTime)
+            foreach (var blocked in blockedTimes)
             {
                 var hasConflict = meetings.Any(meeting =>
                     meeting.Day == blocked.Day &&

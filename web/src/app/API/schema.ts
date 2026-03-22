@@ -1935,10 +1935,6 @@ export interface components {
             sections?: components["schemas"]["TimetableSectionDto"][];
         };
         TimetableFilterDto: {
-            /** Format: time */
-            earliestStart?: null | string;
-            /** Format: time */
-            latestEnd?: null | string;
             noClassTime?: components["schemas"]["TimetableNoClassTimeDto"][];
         };
         TimetableGapCompactnessShape: {

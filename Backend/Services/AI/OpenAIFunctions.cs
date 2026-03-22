@@ -3,6 +3,7 @@ using Backend.Data;
 using Backend.Dtos.Courses;
 using Backend.Dtos.Facts;
 using Backend.Dtos.Policy;
+using Backend.Models;
 using Backend.Services.Timetable;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
@@ -100,7 +101,7 @@ public static class OpenAIFunctions
                 IMPORTANT scoring shape: scoring must contain exactly these sibling objects: groupWeights, scheduleShape, preferenceShape, gapCompactnessShape, assessmentShape.
                 Use HH:MM:SS for every time value.
                 Start-time fields must use HH:30:00 and end-time fields must use HH:20:00.
-                If the user does not specify values, use these defaults: earliestStart 08:30:00, latestEnd 20:20:00, preferredStartTime 09:30:00, preferredEndTime 18:20:00, ignoreGapStartTime 12:30:00, ignoreGapEndTime 14:20:00.
+                If the user does not specify values, use these defaults: preferredStartTime 09:30:00, preferredEndTime 18:20:00, ignoreGapStartTime 12:30:00, ignoreGapEndTime 14:20:00.
                 Use an empty array for noClassTime when there are no blocked periods.
                 Points must be between -3 and 3.
             """,
@@ -649,7 +650,7 @@ public static class OpenAIFunctions
             </prior_timetable_request>";
 
 
-        public static string TimetableResultTOTable(AppDbContext dbContext, TimetableSuggestionsResponseDto timetableSuggestionsResponseDto)
+        public static string TimetableResultTOTable(AppDbContext dbContext, TimetableSuggestionsResponseDto timetableSuggestionsResponseDto, string? userId = null)
         {
             var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
             var topLayouts = (timetableSuggestionsResponseDto.RecommendedLayouts ?? new List<TimetableSuggestionLayoutDto>())
@@ -803,7 +804,166 @@ public static class OpenAIFunctions
                 }
             }
 
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var advisorContext = BuildTimetableAdvisorContext(dbContext, userId, topLayouts.FirstOrDefault());
+                if (!string.IsNullOrWhiteSpace(advisorContext))
+                {
+                    tableBuilder.AppendLine();
+                    tableBuilder.AppendLine(advisorContext.Trim());
+                }
+            }
+
             return tableBuilder.ToString().TrimEnd();
+        }
+
+        private static string BuildTimetableAdvisorContext(
+            AppDbContext dbContext,
+            string userId,
+            TimetableSuggestionLayoutDto? layout)
+        {
+            if (layout == null || layout.Sections == null || layout.Sections.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var sectionIds = layout.Sections
+                .Select(section => section.SectionId)
+                .Distinct()
+                .ToList();
+
+            var sections = dbContext.CourseSections
+                .AsNoTracking()
+                .Where(section => sectionIds.Contains(section.Id))
+                .Include(section => section.CourseMeetings)
+                .Include(section => section.CourseVersion)
+                    .ThenInclude(version => version.Course)
+                    .ThenInclude(course => course.Code)
+                .Include(section => section.CourseVersion)
+                    .ThenInclude(version => version.Assessments)
+                .Include(section => section.CourseVersion)
+                    .ThenInclude(version => version.Prerequisites)
+                    .ThenInclude(prerequisite => prerequisite.RequiredCourseVersion)
+                    .ThenInclude(version => version.Course)
+                .ToList();
+
+            if (sections.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var studentCourses = dbContext.StudentCourses
+                .AsNoTracking()
+                .Where(course => course.StudentId == userId)
+                .Include(course => course.Course)
+                    .ThenInclude(course => course.Code)
+                .ToList();
+
+            var studiedCourses = studentCourses
+                .Where(course => course.Status != StudentCourseStatus.Enrolled)
+                .OrderByDescending(course => course.AcademicYear)
+                .ThenByDescending(course => course.TermId)
+                .ToList();
+
+            var uniqueCourses = sections
+                .GroupBy(section => section.CourseVersion.CourseId)
+                .Select(group => group.First())
+                .ToList();
+
+            var meetings = sections
+                .SelectMany(section => section.CourseMeetings)
+                .OrderBy(meeting => meeting.Day)
+                .ThenBy(meeting => meeting.StartTime)
+                .ToList();
+
+            var meetingsByDay = meetings
+                .GroupBy(meeting => meeting.Day)
+                .ToList();
+
+            var builder = new StringBuilder();
+            builder.AppendLine("<timetable_advisor_context>");
+            builder.AppendLine("Goal: maximize GPA while keeping the timetable manageable.");
+
+            var totalCredits = uniqueCourses.Sum(section => section.CourseVersion.Course.Credit);
+            var earliestStart = meetings.Count > 0 ? meetings.Min(meeting => meeting.StartTime).ToString("HH:mm") : "-";
+            var latestEnd = meetings.Count > 0 ? meetings.Max(meeting => meeting.EndTime).ToString("HH:mm") : "-";
+            var assessmentMix = uniqueCourses
+                .SelectMany(section => section.CourseVersion.Assessments)
+                .GroupBy(assessment => NormalizeAssessmentCategory(assessment.Category))
+                .OrderByDescending(group => group.Count())
+                .ThenBy(group => group.Key)
+                .Select(group => $"{group.Key} ({group.Count()})")
+                .ToList();
+
+            builder.AppendLine($"Schedule facts: {totalCredits} credits, {meetingsByDay.Count} active days, classes from {earliestStart} to {latestEnd}.");
+
+            if (assessmentMix.Count > 0)
+            {
+                builder.AppendLine($"Assessment mix: {string.Join(", ", assessmentMix.Take(4))}.");
+            }
+
+            builder.AppendLine("Proposed timetable courses:");
+            foreach (var course in uniqueCourses.OrderBy(section => section.CourseVersion.Course.Code.Tag).ThenBy(section => section.CourseVersion.Course.CourseNumber))
+            {
+                var courseModel = course.CourseVersion.Course;
+                builder.AppendLine($"- {courseModel.Code.Tag} {courseModel.CourseNumber} {courseModel.Name}");
+            }
+
+            builder.AppendLine("Studied courses and results:");
+            if (studiedCourses.Count == 0)
+            {
+                builder.AppendLine("- No prior studied courses found.");
+            }
+            else
+            {
+                foreach (var studiedCourse in studiedCourses.Take(40))
+                {
+                    var course = studiedCourse.Course;
+                    builder.AppendLine($"- {course.Code.Tag} {course.CourseNumber} {course.Name} - {FormatHistoryOutcome(studiedCourse)}");
+                }
+
+                if (studiedCourses.Count > 40)
+                {
+                    builder.AppendLine($"- Additional studied courses omitted: {studiedCourses.Count - 40}");
+                }
+            }
+
+            builder.AppendLine("Instructions for advisor:");
+            builder.AppendLine("- Use only the proposed timetable courses, studied courses, grades, and schedule facts above.");
+            builder.AppendLine("- Give a short GPA-focused insight explaining why this timetable is suitable or risky.");
+            builder.AppendLine("- Recommend what the student should choose or avoid if the aim is to maximize GPA.");
+            builder.AppendLine("- Do not invent prerequisites, programme rules, or difficulty data that are not shown.");
+            builder.AppendLine("</timetable_advisor_context>");
+
+            return builder.ToString();
+        }
+
+        private static string FormatHistoryOutcome(StudentCourse course)
+        {
+            if (course.Status == StudentCourseStatus.Withdrawn)
+            {
+                return "withdrawal";
+            }
+
+            return course.Grade switch
+            {
+                Grade.AMinus => "A-",
+                Grade.BPlus => "B+",
+                Grade.BMinus => "B-",
+                Grade.CPlus => "C+",
+                Grade.CMinus => "C-",
+                var grade when grade.HasValue => grade.Value.ToString(),
+                _ => course.Status.ToString().ToLowerInvariant(),
+            };
+        }
+
+        private static string NormalizeAssessmentCategory(AssessmentCategory category)
+        {
+            return category switch
+            {
+                AssessmentCategory.GroupProject => "Project",
+                _ => category.ToString(),
+            };
         }
     }
 
@@ -937,6 +1097,11 @@ public static class OpenAIFunctions
             - Always use the timetable tool for timetable generation instead of answering from general knowledge.
             - Map stated preferences into the tool arguments when supported by the schema.
             - If preferences are missing, choose neutral or sensible defaults and generate the timetable immediately.
+            - When the timetable tool returns a `<timetable_advisor_context>` block, use it to write a short insight after the timetable table.
+            - Do not print the raw `<timetable_advisor_context>` block.
+            - Keep timetable insight concise: give the reason and recommendation only, focused on maximizing GPA.
+            - Base the insight on the studied courses, grades, proposed courses, and schedule facts provided in that context.
+            - Give suggestion on choice which timetable No 
             - Do not invent unsupported filter fields.
             - After the timetable tool returns, print the generated Markdown first. Then you may briefly explain the result or the defaults you applied.
             </timetable_rules>

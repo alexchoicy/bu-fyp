@@ -598,6 +598,9 @@ public class TimetableService : ITimetableService
 
     public async Task<TimetableSuggestionsResponseDto> GetSuggestionsTimetableAsync(string userId, TimetableGenerationRequestDto request)
     {
+        request.Filter ??= new TimetableFilterDto();
+        request.Filter.NoClassTime ??= new();
+
         var user = await _context.Users.FindAsync(userId);
 
         var userProgrammeVersionId = await _context.StudentProgrammes

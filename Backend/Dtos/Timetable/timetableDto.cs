@@ -13,8 +13,6 @@ public class TimetableGenerationRequestDto
 
 public class TimetableFilterDto
 {
-    public TimeOnly? EarliestStart { get; set; }
-    public TimeOnly? LatestEnd { get; set; }
     public List<TimetableNoClassTimeDto> NoClassTime { get; set; } = new();
 }
 

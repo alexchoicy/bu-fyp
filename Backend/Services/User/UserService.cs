@@ -12,6 +12,7 @@ public interface IUserService
     Task<bool> AddStudentStudyCoursesAsync(string userId, List<CreateStudentCourseDto> courses);
     Task<AcademicProgressDto> GetAcademicProgressAsync(string userId);
     Task<SuggestedScheduleResponseDto> GetSuggestedScheduleAsync(string userId);
+    Task<AssessmentMixResponseDto> GetAssessmentMixAsync(string userId);
 }
 
 public class UserService : IUserService
@@ -256,5 +257,170 @@ public class UserService : IUserService
             CurrentTermName = currentTermName,
             Years = years,
         };
+    }
+
+    public async Task<AssessmentMixResponseDto> GetAssessmentMixAsync(string userId)
+    {
+        var gradedCourses = await _context.StudentCourses
+            .Where(sc => sc.StudentId == userId && sc.Grade.HasValue)
+            .Include(sc => sc.Course)
+            .Include(sc => sc.Term)
+            .ToListAsync();
+
+        var coursesWithGradePoints = gradedCourses
+            .Select(sc => new
+            {
+                sc.CourseId,
+                sc.AcademicYear,
+                sc.TermId,
+                TermName = sc.Term.Name,
+                Credit = sc.Course.Credit,
+                GradePoint = GradeUtility.GradePoints.TryGetValue(sc.Grade!.Value, out var point) ? point : null,
+            })
+            .Where(item => item.GradePoint.HasValue && item.Credit > 0)
+            .ToList();
+
+        if (coursesWithGradePoints.Count == 0)
+        {
+            return new AssessmentMixResponseDto();
+        }
+
+        var courseIds = coursesWithGradePoints
+            .Select(item => item.CourseId)
+            .Distinct()
+            .ToList();
+
+        var latestVersionIds = await _context.CourseVersions
+            .Where(cv => courseIds.Contains(cv.CourseId))
+            .GroupBy(cv => cv.CourseId)
+            .Select(group => group.OrderByDescending(cv => cv.VersionNumber).First().Id)
+            .ToListAsync();
+
+        var assessmentRows = await _context.CourseVersions
+            .Where(cv => latestVersionIds.Contains(cv.Id))
+            .SelectMany(cv => cv.Assessments.Select(assessment => new
+            {
+                cv.CourseId,
+                assessment.Category,
+                assessment.Weighting,
+            }))
+            .ToListAsync();
+
+        var assessmentsByCourseId = assessmentRows
+            .GroupBy(item => item.CourseId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        var categoryStats = new Dictionary<AssessmentCategory, AssessmentCategoryAccumulator>();
+        var contributingCourseIds = new HashSet<int>();
+        var contributingTerms = new Dictionary<string, (int Year, int TermId, string TermName)>();
+
+        foreach (var course in coursesWithGradePoints)
+        {
+            if (!assessmentsByCourseId.TryGetValue(course.CourseId, out var assessments) || assessments.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var assessment in assessments)
+            {
+                if (assessment.Weighting <= 0)
+                {
+                    continue;
+                }
+
+                var exposureCredits = course.Credit * (assessment.Weighting / 100m);
+                if (exposureCredits <= 0)
+                {
+                    continue;
+                }
+
+                if (!categoryStats.TryGetValue(assessment.Category, out var accumulator))
+                {
+                    accumulator = new AssessmentCategoryAccumulator();
+                    categoryStats[assessment.Category] = accumulator;
+                }
+
+                accumulator.ExposureCredits += exposureCredits;
+                accumulator.PerformanceNumerator += exposureCredits * course.GradePoint!.Value;
+                accumulator.AssessmentCount += 1;
+                accumulator.CourseIds.Add(course.CourseId);
+
+                contributingCourseIds.Add(course.CourseId);
+                contributingTerms[$"{course.AcademicYear}-{course.TermId}"] = (course.AcademicYear, course.TermId, course.TermName);
+            }
+        }
+
+        if (categoryStats.Count == 0)
+        {
+            return new AssessmentMixResponseDto();
+        }
+
+        var totalExposureCredits = categoryStats.Values.Sum(item => item.ExposureCredits);
+
+        var categories = categoryStats
+            .Select(item => new AssessmentMixCategoryDto
+            {
+                Category = item.Key.ToString(),
+                ExposureCredits = Math.Round(item.Value.ExposureCredits, 2),
+                ExposurePercentage = totalExposureCredits > 0
+                    ? Math.Round(item.Value.ExposureCredits / totalExposureCredits * 100, 2)
+                    : 0,
+                PerformanceGpa = item.Value.ExposureCredits > 0
+                    ? Math.Round(item.Value.PerformanceNumerator / item.Value.ExposureCredits, 2)
+                    : 0,
+                AssessmentCount = item.Value.AssessmentCount,
+                CourseCount = item.Value.CourseIds.Count,
+            })
+            .OrderByDescending(item => item.ExposureCredits)
+            .ToList();
+
+        var orderedTerms = contributingTerms.Values
+            .OrderBy(item => item.Year)
+            .ThenBy(item => item.TermId)
+            .ToList();
+
+        var startTerm = orderedTerms.First();
+        var endTerm = orderedTerms.Last();
+
+        var bestCategory = categories
+            .OrderByDescending(item => item.PerformanceGpa)
+            .FirstOrDefault();
+
+        var weakestCategory = categories
+            .OrderBy(item => item.PerformanceGpa)
+            .FirstOrDefault();
+
+        var insight = bestCategory == null || weakestCategory == null
+            ? null
+            : new AssessmentMixInsightDto
+            {
+                BestCategory = bestCategory.Category,
+                BestCategoryGpa = bestCategory.PerformanceGpa,
+                WeakestCategory = weakestCategory.Category,
+                WeakestCategoryGpa = weakestCategory.PerformanceGpa,
+            };
+
+        return new AssessmentMixResponseDto
+        {
+            CoverageStartYear = startTerm.Year,
+            CoverageStartTermId = startTerm.TermId,
+            CoverageStartTermName = startTerm.TermName,
+            CoverageEndYear = endTerm.Year,
+            CoverageEndTermId = endTerm.TermId,
+            CoverageEndTermName = endTerm.TermName,
+            CourseCount = contributingCourseIds.Count,
+            TermCount = orderedTerms.Count,
+            TotalExposureCredits = Math.Round(totalExposureCredits, 2),
+            Insight = insight,
+            Categories = categories,
+        };
+    }
+
+    private sealed class AssessmentCategoryAccumulator
+    {
+        public decimal ExposureCredits { get; set; }
+        public decimal PerformanceNumerator { get; set; }
+        public int AssessmentCount { get; set; }
+        public HashSet<int> CourseIds { get; } = new();
     }
 }

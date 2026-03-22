@@ -278,6 +278,7 @@ watch(blockTimes, (value) => {
     if (!generationRequest.value.filter) {
         generationRequest.value.filter = {};
     }
+
     generationRequest.value.filter.noClassTime = toNoClassTimes(value);
 }, { deep: true, immediate: true });
 </script>

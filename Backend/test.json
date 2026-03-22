@@ -75,8 +75,6 @@
         }
     },
     "filter": {
-        "earliestStart": "08:00:00",
-        "latestEnd": "20:00:00",
         "noClassTime": [
             {
                 "day": 0,
