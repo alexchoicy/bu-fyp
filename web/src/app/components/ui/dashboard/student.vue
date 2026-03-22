@@ -62,11 +62,27 @@ const currentTermLabel = computed(() => {
           {{ programmeName }}
         </p>
       </div>
-      <div class="text-left md:text-right">
-        <p class="text-sm text-muted-foreground">Current semester</p>
-        <p class="font-semibold">
-          {{ currentTermLabel }}
-        </p>
+      <div class="flex flex-col gap-3 md:items-end">
+        <div class="text-left md:text-right">
+          <p class="text-sm text-muted-foreground">Current semester</p>
+          <p class="font-semibold">
+            {{ currentTermLabel }}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2 md:justify-end">
+          <Button as-child variant="outline" size="sm">
+            <NuxtLink to="/user/programme">View programme</NuxtLink>
+          </Button>
+          <Button as-child variant="outline" size="sm">
+            <NuxtLink to="/user/suggested-schedule">Suggested schedule</NuxtLink>
+          </Button>
+          <Button as-child size="sm">
+            <NuxtLink to="/timetable/generation">Generate timetable</NuxtLink>
+          </Button>
+          <Button as-child variant="secondary" size="sm">
+            <NuxtLink to="/chat">Open chat</NuxtLink>
+          </Button>
+        </div>
       </div>
     </div>
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
     ArrowLeft,
-    Download,
     FileText,
     Building2,
     BookOpen,
@@ -146,12 +145,18 @@ function formatCourseCode(course?: components["schemas"]["SimpleCourseDto"]) {
                         </p>
                     </div>
                 </div>
-                <!-- <div class="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                        <Download class="h-4 w-4 mr-2" />
-                        Export PDF
+                <div class="flex items-center gap-2">
+                    <Button as-child variant="outline" size="sm">
+                        <NuxtLink to="/user/course">
+                            My records
+                        </NuxtLink>
                     </Button>
-                </div> -->
+                    <Button as-child size="sm">
+                        <NuxtLink to="/timetable">
+                            Open timetable planner
+                        </NuxtLink>
+                    </Button>
+                </div>
             </div>
         </header>
 

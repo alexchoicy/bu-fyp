@@ -26,13 +26,11 @@ defineProps<{
             <p class="mt-2 text-base font-medium">{{ course.courseName }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <!-- <Button variant="outline" size="sm">
-              View Course Detail
+            <Button v-if="course.courseId" as-child variant="outline" size="sm">
+              <NuxtLink :to="`/courses/${course.courseId}`">
+                View course
+              </NuxtLink>
             </Button>
-
-            <Button variant="destructive" size="sm">
-              Delete
-            </Button> -->
           </div>
         </div>
       </CardHeader>
@@ -42,7 +40,7 @@ defineProps<{
             <Calendar class="h-4 w-4 text-muted-foreground" />
             <span v-if="course.term && course.academicYear">{{ course.term }} {{
               course.academicYear
-            }}-{{ course.academicYear + 1 }}</span>
+              }}-{{ course.academicYear + 1 }}</span>
           </div>
         </div>
         <div v-if="course.notes" class="text-sm">

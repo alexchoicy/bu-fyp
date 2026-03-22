@@ -76,15 +76,32 @@ const getItemCredit = (item: components["schemas"]["SuggestedScheduleItemDto"]) 
 
   return item.courseCredit ?? "-";
 };
+
+const getCourseLink = (item: components["schemas"]["SuggestedScheduleItemDto"]) => {
+  if (item.courseId == null) return null;
+
+  const courseId = Number(item.courseId);
+  return Number.isFinite(courseId) ? `/courses/${courseId}` : null;
+};
 </script>
 
 <template>
   <div class="flex-1 p-6">
-    <div class="flex flex-col gap-2">
-      <h1 class="text-2xl font-bold">Suggested Schedule</h1>
-      <p class="text-muted-foreground">
-        Recommended study plan from your programme, grouped by year and term.
-      </p>
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div class="flex flex-col gap-2">
+        <h1 class="text-2xl font-bold">Suggested Schedule</h1>
+        <p class="text-muted-foreground">
+          Recommended study plan from your programme, grouped by year and term.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <Button as-child variant="outline">
+          <NuxtLink to="/user/programme">View programme progress</NuxtLink>
+        </Button>
+        <Button as-child>
+          <NuxtLink to="/timetable/generation">Generate timetable</NuxtLink>
+        </Button>
+      </div>
     </div>
 
     <div class="mt-6 space-y-4">
@@ -129,14 +146,11 @@ const getItemCredit = (item: components["schemas"]["SuggestedScheduleItemDto"]) 
                       <th class="px-4 py-2 font-medium">Type</th>
                       <th class="px-4 py-2 font-medium">Progress</th>
                       <th class="px-4 py-2 font-medium">Credits</th>
+                      <th class="px-4 py-2 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr
-                      v-for="item in term.items ?? []"
-                      :key="Number(item.id)"
-                      class="border-b last:border-b-0"
-                    >
+                    <tr v-for="item in term.items ?? []" :key="Number(item.id)" class="border-b last:border-b-0">
                       <td class="px-4 py-3">{{ getItemLabel(item) }}</td>
                       <td class="px-4 py-3">
                         <Badge v-if="item.isFreeElective" variant="secondary">Free Elective</Badge>
@@ -149,6 +163,12 @@ const getItemCredit = (item: components["schemas"]["SuggestedScheduleItemDto"]) 
                         <span v-else class="text-muted-foreground">-</span>
                       </td>
                       <td class="px-4 py-3">{{ getItemCredit(item) }}</td>
+                      <td class="px-4 py-3">
+                        <Button v-if="getCourseLink(item)" as-child variant="ghost" size="sm">
+                          <NuxtLink :to="getCourseLink(item)!">View course</NuxtLink>
+                        </Button>
+                        <span v-else class="text-muted-foreground">-</span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>

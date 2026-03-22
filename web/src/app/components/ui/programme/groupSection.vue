@@ -63,14 +63,18 @@ const freeElectiveStudies = computed(() => {
                         <Badge class="p-1">{{ code.code?.tag }}</Badge>
                         <span class="text-sm text-muted-foreground">Any {{ code.code.name }} course</span>
                     </div>
+                    <Button as-child variant="ghost" size="sm">
+                        <NuxtLink to="/courses">
+                            Browse
+                        </NuxtLink>
+                    </Button>
                 </div>
             </div>
             <div v-if="courses?.length > 0 && userProgrammeDetail?.ruleNode.type !== 'free_elective'" class="space-y-2">
                 <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Courses</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                     <UiProgrammeCourseCard v-for="course in courses" :key="course?.course?.courseId"
-                        :course-info="course.course"
-                        :study-history="findStudyById(course?.course?.courseId)"
+                        :course-info="course.course" :study-history="findStudyById(course?.course?.courseId)"
                         :user-programme-item="userProgrammeDetail?.items?.find((item) => course.course?.courseId === item.courseID)" />
                 </div>
             </div>

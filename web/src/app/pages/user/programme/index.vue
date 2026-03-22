@@ -24,6 +24,18 @@ const sortedCategories = computed(() => {
 <template>
     <div class="flex flex-col  py-8 px-4">
         <div class="space-y-6">
+            <div class="flex flex-wrap gap-2">
+                <Button as-child variant="outline">
+                    <NuxtLink to="/user/suggested-schedule">
+                        View Suggested Schedule
+                    </NuxtLink>
+                </Button>
+                <Button as-child>
+                    <NuxtLink to="/timetable/generation">
+                        Generate Timetable
+                    </NuxtLink>
+                </Button>
+            </div>
             <UiProgrammeDetailCard :user-studies="userStudies" :programme="programme"
                 :user-programme-detail="userProgrammeDetail" />
             <Separator />
