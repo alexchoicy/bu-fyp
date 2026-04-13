@@ -71,7 +71,9 @@ const navigationAdmin = [
 <template>
   <Sidebar>
     <SidebarHeader>
-      <NuxtLink to="/" class="text-2xl font-bold items-center flex justify-center">FYP</NuxtLink>
+      <NuxtLink to="/" class="text-2xl font-bold items-center flex justify-center">
+        Academic Planner
+      </NuxtLink>
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
