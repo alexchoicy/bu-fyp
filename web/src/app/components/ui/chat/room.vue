@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUp, LoaderCircle } from "lucide-vue-next";
+import { ArrowUp, LoaderCircle, Plus } from "lucide-vue-next";
 import type { components } from "~/API/schema";
 import { base64UrlEncodeString } from "~/lib/base64utils";
 
@@ -128,6 +128,28 @@ const canSend = computed(() => {
   const value = input.value?.trim() ?? "";
   return value.length > 0 && lastMessageId.value === "" && !isSending.value;
 });
+
+const canStartNewRoom = computed(() => {
+  return !isSending.value && lastMessageId.value === "";
+});
+
+const startNewRoom = async () => {
+  if (!canStartNewRoom.value) {
+    return;
+  }
+
+  isNewChat.value = true;
+  messages.value = [];
+  thisChat.value = "";
+  lastMessageId.value = "";
+  input.value = "";
+
+  await nextTick();
+  messageViewport.value?.scrollTo({
+    top: 0,
+    behavior: "auto",
+  });
+}
 
 const messagePoller = async () => {
   if (lastMessageId.value === "") return;
@@ -272,6 +294,12 @@ const onSend = async () => {
 
 <template>
   <div class="flex flex-col h-full">
+    <div class="flex justify-end px-4 py-3">
+      <Button variant="outline" size="sm" :disabled="!canStartNewRoom" @click="startNewRoom">
+        <Plus class="size-4" />
+        <span>New room</span>
+      </Button>
+    </div>
     <div ref="messageViewport" class="flex-1 overflow-y-auto p-4">
       <div v-for="message in messages" :key="message.id" class="">
         <div v-if="message.role === Roles.User" class="mb-2 flex justify-end">
