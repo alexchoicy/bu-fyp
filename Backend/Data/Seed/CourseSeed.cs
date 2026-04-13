@@ -1061,7 +1061,7 @@ public class CourseSeed
     {
         var comp2880 = new Course
         {
-            Name = "Demo Assignments Only Course",
+            Name = "DEMO Assignment-Heavy - Applied Software Workshop",
             CourseNumber = "2880",
             CodeId = compCode.Id,
             Credit = 3,
@@ -1129,7 +1129,7 @@ public class CourseSeed
     {
         var comp2881 = new Course
         {
-            Name = "Demo Examination Only Course",
+            Name = "DEMO Exam-Heavy - Formal Methods and Assessment",
             CourseNumber = "2881",
             CodeId = compCode.Id,
             Credit = 3,
@@ -1189,7 +1189,7 @@ public class CourseSeed
     {
         var comp2882 = new Course
         {
-            Name = "Demo Group Project Course",
+            Name = "DEMO Group Project - Collaborative Systems Project",
             CourseNumber = "2882",
             CodeId = compCode.Id,
             Credit = 3,
@@ -1258,7 +1258,7 @@ public class CourseSeed
     {
         var comp2883 = new Course
         {
-            Name = "Demo Project Only Course",
+            Name = "DEMO Solo Project - Independent Computing Project",
             CourseNumber = "2883",
             CodeId = compCode.Id,
             Credit = 3,
@@ -1320,7 +1320,7 @@ public class CourseSeed
     {
         var comp2884 = new Course
         {
-            Name = "Demo Balanced Assessment Course",
+            Name = "DEMO Balanced - Integrated Computing Practice",
             CourseNumber = "2884",
             CodeId = compCode.Id,
             Credit = 3,
@@ -1392,6 +1392,82 @@ public class CourseSeed
         return comp2884Version;
     }
 
+        public static async Task<CourseVersion> comp2885Gen(AppDbContext context, Code compCode, Term semester1)
+    {
+        var comp2885 = new Course
+        {
+            Name = "DEMO Free-Day Tradeoff - Human-Centered Computing Studio",
+            CourseNumber = "2885",
+            CodeId = compCode.Id,
+            Credit = 3,
+            Description = ""
+        };
+
+        await context.Courses.AddAsync(comp2885);
+
+        var comp2885Version = new CourseVersion
+        {
+            Course = comp2885,
+            VersionNumber = 1,
+            Description = "",
+            AimAndObjectives = "",
+            CourseContent = "",
+            CILOs = new List<CILOs>
+            {
+                new CILOs { code = "CILO1", Description = "Apply human-centered design principles in computing contexts" },
+                new CILOs { code = "CILO2", Description = "Develop studio-style project outputs with iterative improvement" },
+                new CILOs { code = "CILO3", Description = "Present design decisions clearly and collaboratively" }
+            },
+            TLAs = new List<TLAs>
+            {
+                new TLAs { code = new[] { "Studio", "Workshop" }, Description = "Students will learn through studio-style critique and guided workshop sessions." },
+                new TLAs { code = new[] { "Project", "Presentation" }, Description = "Students will build and present iterative design artifacts." }
+            },
+            FromYear = 2025,
+            FromTermId = semester1.Id
+        };
+
+        await context.CourseVersions.AddAsync(comp2885Version);
+
+        var comp2885Assessments = new List<CourseAssessment>
+        {
+            new CourseAssessment
+            {
+                CourseVersion = comp2885Version,
+                Name = "Studio Exercises",
+                Weighting = 20,
+                Category = AssessmentCategory.Assignment
+            },
+            new CourseAssessment
+            {
+                CourseVersion = comp2885Version,
+                Name = "Design Project",
+                Weighting = 40,
+                Category = AssessmentCategory.Project
+            },
+            new CourseAssessment
+            {
+                CourseVersion = comp2885Version,
+                Name = "Presentation",
+                Weighting = 20,
+                Category = AssessmentCategory.Presentation
+            },
+            new CourseAssessment
+            {
+                CourseVersion = comp2885Version,
+                Name = "Participation",
+                Weighting = 20,
+                Category = AssessmentCategory.Participation
+            }
+        };
+
+        await context.CourseAssessments.AddRangeAsync(comp2885Assessments);
+
+        await context.SaveChangesAsync();
+
+        return comp2885Version;
+    }
+
 
 
     public static async Task seedCourses(AppDbContext context, UserManager<User> userManager)
@@ -1433,6 +1509,7 @@ public class CourseSeed
         var comp2882Version = await comp2882Gen(context, compCode, semester1);
         var comp2883Version = await comp2883Gen(context, compCode, semester1);
         var comp2884Version = await comp2884Gen(context, compCode, semester1);
+        var comp2885Version = await comp2885Gen(context, compCode, semester1);
 
         await LinkCourseIntoCourseGroups(context, comp1005Version.Id, compSciCore001.Id);
         await LinkCourseIntoCourseGroups(context, math1025Version.Id, compSciCore001.Id);
@@ -1443,6 +1520,13 @@ public class CourseSeed
 
         await LinkCourseIntoCourseGroups(context, comp4146Version.Id, compISAElective003.Id);
         await LinkCourseIntoCourseGroups(context, comp3057Version.Id, compISAElective003.Id);
+
+        await LinkCourseIntoCourseGroups(context, comp2880Version.Id, freeElective001.Id);
+        await LinkCourseIntoCourseGroups(context, comp2881Version.Id, freeElective001.Id);
+        await LinkCourseIntoCourseGroups(context, comp2882Version.Id, freeElective001.Id);
+        await LinkCourseIntoCourseGroups(context, comp2883Version.Id, freeElective001.Id);
+        await LinkCourseIntoCourseGroups(context, comp2884Version.Id, freeElective001.Id);
+        await LinkCourseIntoCourseGroups(context, comp2885Version.Id, freeElective001.Id);
 
         math3836Version.AntiRequisites.Add(
             new CourseAntiReq()
@@ -1675,7 +1759,15 @@ public class CourseSeed
             SectionNumber = 1
         };
 
-        await context.CourseSections.AddRangeAsync(new[] { comp1005Section1 });
+        var comp1005Section2 = new CourseSection()
+        {
+            CourseVersion = comp1005Version,
+            Year = 2025,
+            Term = semester2,
+            SectionNumber = 2
+        };
+
+        await context.CourseSections.AddRangeAsync(new[] { comp1005Section1, comp1005Section2 });
 
         comp1005Section1.CourseMeetings.Add(new CourseMeeting()
         {
@@ -1690,6 +1782,21 @@ public class CourseSeed
             MeetingType = "Tutorial",
             StartTime = new TimeOnly(9, 30),
             EndTime = new TimeOnly(10, 20)
+        });
+
+        comp1005Section2.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 2, // Tue
+            MeetingType = "Lecture",
+            StartTime = new TimeOnly(13, 30),
+            EndTime = new TimeOnly(14, 20)
+        });
+        comp1005Section2.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 4, // Thu
+            MeetingType = "Tutorial",
+            StartTime = new TimeOnly(13, 30),
+            EndTime = new TimeOnly(14, 20)
         });
 
         // comp2876 sections - 2025 sem 2
@@ -2002,7 +2109,15 @@ public class CourseSeed
             SectionNumber = 2
         };
 
-        await context.CourseSections.AddRangeAsync(new[] { comp2884Section1, comp2884Section2 });
+        var comp2884Section3 = new CourseSection()
+        {
+            CourseVersion = comp2884Version,
+            Year = 2025,
+            Term = semester2,
+            SectionNumber = 3
+        };
+
+        await context.CourseSections.AddRangeAsync(new[] { comp2884Section1, comp2884Section2, comp2884Section3 });
 
         comp2884Section1.CourseMeetings.Add(new CourseMeeting()
         {
@@ -2032,6 +2147,69 @@ public class CourseSeed
             MeetingType = "Lab",
             StartTime = new TimeOnly(16, 30),
             EndTime = new TimeOnly(17, 20)
+        });
+
+        comp2884Section3.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 2, // Tue
+            MeetingType = "Lecture",
+            StartTime = new TimeOnly(9, 30),
+            EndTime = new TimeOnly(10, 20)
+        });
+        comp2884Section3.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 4, // Thu
+            MeetingType = "Lab",
+            StartTime = new TimeOnly(16, 30),
+            EndTime = new TimeOnly(17, 20)
+        });
+
+        var comp2885Section1 = new CourseSection()
+        {
+            CourseVersion = comp2885Version,
+            Year = 2025,
+            Term = semester2,
+            SectionNumber = 1
+        };
+
+        var comp2885Section2 = new CourseSection()
+        {
+            CourseVersion = comp2885Version,
+            Year = 2025,
+            Term = semester2,
+            SectionNumber = 2
+        };
+
+        await context.CourseSections.AddRangeAsync(new[] { comp2885Section1, comp2885Section2 });
+
+        comp2885Section1.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 5, // Fri
+            MeetingType = "Studio",
+            StartTime = new TimeOnly(13, 30),
+            EndTime = new TimeOnly(14, 20)
+        });
+        comp2885Section1.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 5, // Fri
+            MeetingType = "Workshop",
+            StartTime = new TimeOnly(14, 30),
+            EndTime = new TimeOnly(15, 20)
+        });
+
+        comp2885Section2.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 2, // Tue
+            MeetingType = "Studio",
+            StartTime = new TimeOnly(12, 30),
+            EndTime = new TimeOnly(13, 20)
+        });
+        comp2885Section2.CourseMeetings.Add(new CourseMeeting()
+        {
+            Day = 4, // Thu
+            MeetingType = "Workshop",
+            StartTime = new TimeOnly(12, 30),
+            EndTime = new TimeOnly(13, 20)
         });
 
         await context.SaveChangesAsync();
